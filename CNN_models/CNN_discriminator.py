@@ -30,7 +30,7 @@ waveFormLegth=300
 
 #training set
 neutrons = pd.read_parquet('data/finalData/CNN/neutrons.pq', engine='pyarrow').query('55000<tof<75000 and amplitude<610').reset_index()
-gammas1 = pd.read_parquet('data/finalData/CNN/gammas1.pq', engine='pyarrow').query('16000<tof<30000 and amplitude<610').reset_index()
+gammas1 = pd.read_parquet('data/finalData/CNN/gammas1.pq', engine='pyarrow').query('22000<tof<30000 and amplitude<610').reset_index()
 #gammas2 = pd.read_parquet('data/finalData/CNN/gammas2.pq', engine='pyarrow').query('amplitude<610').reset_index()
 #gammas=pd.concat([gammas2, gammas1]).reset_index()
 gammas=gammas1
@@ -40,6 +40,8 @@ L=min(len(gammas), len(neutrons))
 
 #testset
 df_test = pd.read_parquet('data/finalData/CNN/test.pq', engine='pyarrow').reset_index()
+df_test10min = pd.read_parquet('data/finalData/CNN/test10min.pq', engine='pyarrow').reset_index()
+
 #df_test = df_test.compute()
 
 
@@ -81,16 +83,15 @@ y_test = df_test.y
 #model definition
 model = Sequential()
 #model.add(Dropout(0.05))
-model.add(Conv1D(filters=16, kernel_size=13, strides=7, activation='relu', input_shape=(window_width, 1), padding='same'))
-model.add(Dropout(0.08))
+model.add(Conv1D(filters=12, kernel_size=9, strides=4, activation='relu', input_shape=(window_width, 1), padding='same'))
+#model.add(Dropout(0.02))
 model.add(MaxPooling1D(2, strides=2))
 
-model.add(Conv1D(filters=16, kernel_size=13, strides=7, activation='relu'))
-model.add(Dropout(0.08))
+model.add(Conv1D(filters=12, kernel_size=5, strides=2, activation='relu', padding='same'))
+#model.add(Dropout(0.02))
 model.add(MaxPooling1D(2, stride=2))
 
 model.add(Flatten(name='flat'))
-#model.add(Dropout(0.05))
 model.add(Dense(1, activation='sigmoid', name='preds'))
 
 opt = optimizers.Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
@@ -99,11 +100,11 @@ model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
 #checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 #callbacks_list = [checkpoint]
 # Fit the model
-epochs = 500
+epochs = 200
 hist = model.fit(x_train, y_train, batch_size=50, epochs=epochs, validation_data=(x_test, y_test),verbose=2)#, callbacks=callbacks_list)
 print(hist.history)
 
-#model_path='weights-improvement-37-0.87.hdf5'
+#model_path='weights-improvement-30-0.87.hdf5'
 #model=keras.models.load_model('CNN_models/%s'%model_path)
 
 
@@ -167,7 +168,7 @@ plt.ylabel('CNN prediction')
 plt.show()
 
 
-Ecal = np.load('data/finalData/E_call_digi.npy')/1000
+Ecal = np.load('data/finalData/Ecal_D.npy')/1000
 df_test['E'] = Ecal[1] + Ecal[0]*df_test['qdc_lg_fine']
 dummy = df_test.query('E<6')
 plt.hexbin(dummy.E, dummy.pred, norm=mc.LogNorm())

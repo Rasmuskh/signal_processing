@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from dask.diagnostics import ProgressBar
 
-import seaborn as sns; sns.set(color_codes=True)
+import seaborn as sns; sns.set(color_codes=True, style='whitegrid')
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
 import sys
@@ -89,14 +89,14 @@ def get_fom(Emin=0, mode='digital'):
     Gdummy = G[left:right]
     sigma = 0.2
     ymax=max(Gdummy)
-    P1, C1 =  curve_fit(gaus, x, Gdummy, p0=[ymax, x0, sigma], bounds=( (ymax-1,x0-0.001, 0), (ymax+1, x0+0.001, 0.5) ))
+    P1, C1 =  curve_fit(gaus, x, Gdummy, p0=[ymax, x0, sigma], bounds=( (ymax-10,x0-0.001, 0), (ymax+10, x0+0.001, 0.5) ))
 
-    left, right, x0 = Vlist[0], 400, Plist[1]/1000
+    left, right, x0 = Vlist[0], 1000, Plist[1]/1000
     x = (H[1][left: right] -(H[1][1] - H[1][0])/2)
     Gdummy = G[left:right]
     sigma = 0.5
     ymax=max(Gdummy)
-    P2, C2 =  curve_fit(gaus, x, Gdummy, p0=[ymax, x0, sigma], bounds=( (ymax-1,x0-0.01, 0), (ymax+1, x0+0.01, 0.5) ))
+    P2, C2 =  curve_fit(gaus, x, Gdummy, p0=[ymax, x0, sigma], bounds=( (ymax-10,x0-0.01, 0), (ymax+10, x0+0.01, 0.5) ))
 
     #fit_gaus(H=G, sigma=2)
 

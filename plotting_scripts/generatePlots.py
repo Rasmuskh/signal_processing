@@ -4,23 +4,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mc
 import matplotlib.ticker as plticker
-import seaborn as sns; sns.set(color_codes=True)
+import seaborn as sns; sns.set(color_codes=True, style='whitegrid')
 import sys
 import dask.dataframe as dd
 sys.path.append('../../analog_tof/')
 sys.path.append('../tof')
 import pyTagAnalysis as pta
 
+c=0.299792458 # m/ns
+
 #Load in dataframes
 #Load the digitized
-D = pd.read_parquet('../data/finalData/data1hour_CNN.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'pred', 'tof', 'baseline_std']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<=amplitude<6100')
+D = pd.read_parquet('../data/finalData/finalData.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'pred', 'tof', 'baseline_std']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<=amplitude<6100')
 fsg=4900
 flg=250
 D['ps'] = ((flg*500+D['qdc_lg'])-(fsg*60+D['qdc_sg']))/(flg*500+D['qdc_lg']).astype(np.float64)
 Dcal=np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/Ecal_D.npy')
 Tshift_D = np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/Tshift_D.npy')
 D['E'] = (D.qdc_lg*Dcal[0]+Dcal[1])/1000
-D['tof'] = (D['tof'] - Tshift_D[1])/1000 + 3.3
+D['tof'] = (D['tof'] - Tshift_D[1])/1000 + 1.055/c
 
 #Load the analog
 A = pta.load_data('../data/finalData/Data1793_cooked.root')
@@ -34,7 +36,7 @@ Tshift_A = np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/Ts
 Tcal = np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/T_cal_analog.npy')
 A['E'] = A.qdc_lg*Acal[0]+Acal[1]
 A['tof'] = 1000 - A['tdc_det0_yap0']
-A['tof'] = (A['tof'] - Tshift_A[1])*(-Tcal[0]) + 3.3
+A['tof'] = (A['tof'] - Tshift_A[1])*(-Tcal[0]) + 1.055/c
 
 cmap='viridis'
 
@@ -58,10 +60,11 @@ def tof_hist(df, outpath, tNmax, qdc_min, mode, window, bins, fontsize, tnlow, t
     )
     plt.axvline(x=tnlow, ymin=0, ymax=0.22, color='red', ls='--', lw=1)
     plt.axvline(x=tnhigh, ymin=0, ymax=0.22, color='red', ls='--', lw=1)
-    plt.axes([.52, .62, .45, .3], facecolor='white')
+    with sns.axes_style("ticks"):
+        plt.axes([.52, .62, .45, .3], facecolor='white')
     dummy=df.query('%s<tof<%s'%(tnlow, tnhigh)).reset_index()
     c=299792458
-    m=939.565#*c
+    m=939.565
     x=1.055
     v=(x/(dummy.tof.astype(np.float64)*10**(-9)))
     vnat=v/c
@@ -70,6 +73,7 @@ def tof_hist(df, outpath, tNmax, qdc_min, mode, window, bins, fontsize, tnlow, t
     vhigh = (x/(tnlow*10**(-9)))/c
     Elow = 1/2*m*(vlow)**2
     Ehigh = 1/2*m*(vhigh)**2
+    sns.set_style("ticks")
     plt.hist(E, range=(Elow,Ehigh), bins=tnhigh-tnlow, histtype='step', color='red', label='Neutron\nenergy', lw=1.5)
     plt.ylabel('Counts', fontsize= fontsize)
     plt.xlabel('E(MeV)', fontsize= fontsize)
@@ -80,9 +84,10 @@ def tof_hist(df, outpath, tNmax, qdc_min, mode, window, bins, fontsize, tnlow, t
 
     plt.tight_layout()
     plt.savefig(outpath+'tof.pdf', format='pdf')
+    sns.set(color_codes=True, style='whitegrid')
     plt.show()
 
-def tof_Edep_Eneutron(df, outpath, fontsize, title, tnlow, tnhigh):
+def Edep_Eneutron(df, outpath, fontsize, title, tnlow, tnhigh):
     dummy=df.query('%s<tof<%s'%(tnlow, tnhigh)).reset_index()
     c=299792458
     m=939.565#*c
@@ -97,7 +102,8 @@ def tof_Edep_Eneutron(df, outpath, fontsize, title, tnlow, tnhigh):
     dummy['Eneutron'] = E
 
     plt.figure(figsize=(6.2,3.1))
-    plt.hexbin(dummy.Eneutron, dummy.E, extent=(Elow, Ehigh, 0, 3.5), cmap='viridis', gridsize=(50))
+    plt.hexbin(dummy.Eneutron, dummy.E, extent=(Elow, Elow+5, 0, 3), cmap='viridis', gridsize=(50,30))#, norm=mc.LogNorm())
+    #plt.scatter(dummy.Eneutron, dummy.E, c=dummy.pred, cmap='viridis')#, extent=(Elow, Elow+5, 0, 3), cmap='viridis', gridsize=(50,30))#, norm=mc.LogNorm())
     plt.xlabel('Neutron energy $MeV$', fontsize= fontsize)
     plt.ylabel('Deposited energy $MeV_{ee}$', fontsize= fontsize)
     ax = plt.gca()
@@ -112,14 +118,14 @@ def tof_Edep_Eneutron(df, outpath, fontsize, title, tnlow, tnhigh):
 def tof_hist_filt(df, outpath, qdc_min, cut, mode, CNN, window, bins, fontsize):
     dummy=df.query('%s<qdc_lg'%(qdc_min))
     plt.figure(figsize=(6.2,2.8))
-    plt.hist(dummy.tof, bins, range=window, alpha=0.5, lw=1.5, label='Unfiltered')
+    plt.hist(dummy.tof, bins, range=window, alpha=0.5, lw=0, label='Unfiltered')
     if CNN==True:
-        plt.hist(dummy.query('pred<%s'%cut).tof, bins, range=window, histtype='step', lw=1.5, label='Gammas')
-        plt.hist(dummy.query('pred>=%s'%cut).tof, bins, range=window, histtype='step', lw=1.5, label='Neutrons')
+        plt.hist(dummy.query('pred<%s'%cut).tof, bins, range=window, histtype='step', lw=1, label='Gammas')
+        plt.hist(dummy.query('pred>=%s'%cut).tof, bins, range=window, histtype='step', lw=1, label='Neutrons')
         outpath+='CNN'
     else:
-        plt.hist(dummy.query('ps<%s'%cut).tof, bins, range=window, histtype='step', lw=1.5, label='Gammas')
-        plt.hist(dummy.query('ps>=%s'%cut).tof, bins, range=window, histtype='step', lw=1.5, label='Neutrons')
+        plt.hist(dummy.query('ps<%s'%cut).tof, bins, range=window, histtype='step', lw=1, label='Gammas')
+        plt.hist(dummy.query('ps>=%s'%cut).tof, bins, range=window, histtype='step', lw=1, label='Neutrons')
     plt.xlabel('ToF(ns)', fontsize= fontsize)
     plt.ylabel('Counts', fontsize= fontsize)
     #plt.title(title, fontsize=12)
@@ -233,26 +239,28 @@ def qdc_hist(df, outpath, bins, window, title, fontsize):
     plt.show()
 
 fontsize = 10
-#tof_hist(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', window=(-20,130), bins=150, qdc_min=0, tNmax=75, fontsize=fontsize, mode="Time of flight spectrum\nDigital setup", tnlow=31, tnhigh=65)
-#tof_hist(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', window=(-20,130), bins=150, qdc_min=500, tNmax=50, fontsize=fontsize, mode="Time of flight spectrum\nAnalog setup", tnlow=28, tnhigh=50)
+DigitalCut = 0.223
+AnalogCut = 0.259
+tof_hist(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', window=(-20,130), bins=150, qdc_min=0, tNmax=75, fontsize=fontsize, mode="Time of flight spectrum\nDigital setup", tnlow=31, tnhigh=65)
+tof_hist(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', window=(-20,130), bins=150, qdc_min=500, tNmax=50, fontsize=fontsize, mode="Time of flight spectrum\nAnalog setup", tnlow=28, tnhigh=50)
 
-psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', CNN=False, cut=0.222, down=0, up=0.4, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut: Digital setup", arrow1=[2, 0.08, 2.5, 0.01], arrow2=[4.2, 0.09, 4.7, 0.01], box=[2, 0.38])
-#psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/',  CNN=True, cut=0.635, down=0, up=1, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut: Digital setup", arrow1=[2, 0.25, 2.5, 0.4], arrow2=[4.2, 0.25, 4.7, 0.4], box=[2, 0.9])
-#psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/',  CNN=False, cut=0.259, down=0.1, up=0.5, qdc_min=500, fontsize=fontsize, title="--- Discrimination cut: Analog setup", arrow1=[2, 0.2, 2.5, 0.11], arrow2=[4.2, 0.2, 4.7, 0.11], box=[2, 0.48])
+psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', CNN=False, cut=DigitalCut, down=0, up=0.4, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut: Digital setup", arrow1=[2, 0.08, 2.5, 0.01], arrow2=[4.2, 0.09, 4.7, 0.01], box=[2, 0.38])
+psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/',  CNN=True, cut=0.5, down=0, up=1, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut: Digital setup", arrow1=[2, 0.25, 2.5, 0.4], arrow2=[4.2, 0.25, 4.7, 0.4], box=[2, 0.9])
+psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/',  CNN=False, cut=AnalogCut, down=0.1, up=0.5, qdc_min=500, fontsize=fontsize, title="--- Discrimination cut: Analog setup", arrow1=[2, 0.2, 2.5, 0.11], arrow2=[4.2, 0.2, 4.7, 0.11], box=[2, 0.48])
 
-tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=0, cut=0.222, fontsize=fontsize, title="--- Discrimination cut: Digital setup", txt_xy_gamma=[10, 0.3], txt_xy_neutron=[70, 0.3], arrow_xy_gamma=[5, 0.17], arrow_xy_neutron=[50, 0.2], CNN=False)
-#tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=0, cut=0.635, fontsize=fontsize, title="--- Discrimination cut: Digital setup", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.7], arrow_xy_gamma=[4, 0.2], arrow_xy_neutron=[45, 0.85], CNN=True)
-#tof_psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=500, cut=0.259, fontsize=fontsize, title="--- Discrimination cut: Analog setup", txt_xy_gamma=[10, 0.48], txt_xy_neutron=[60, 0.48], arrow_xy_gamma=[4, 0.28], arrow_xy_neutron=[45, 0.38], CNN=False)
+tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=0, cut=DigitalCut, fontsize=fontsize, title="--- Discrimination cut: Digital setup", txt_xy_gamma=[10, 0.3], txt_xy_neutron=[70, 0.3], arrow_xy_gamma=[5, 0.17], arrow_xy_neutron=[50, 0.2], CNN=False)
+tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=0, cut=0.5, fontsize=fontsize, title="--- Discrimination cut: Digital setup", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.7], arrow_xy_gamma=[4, 0.2], arrow_xy_neutron=[45, 0.85], CNN=True)
+tof_psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=500, cut=AnalogCut, fontsize=fontsize, title="--- Discrimination cut: Analog setup", txt_xy_gamma=[10, 0.48], txt_xy_neutron=[60, 0.48], arrow_xy_gamma=[4, 0.28], arrow_xy_neutron=[45, 0.38], CNN=False)
 
-tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=0.222, window=(-20,130), bins=150, qdc_min=0, fontsize=fontsize, mode="Filtered time of flight spectrum\nCharge comparisson method\nDigital setup", CNN=False)
-#tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=0.635, window=(-20,130), bins=150, qdc_min=0, fontsize=fontsize, mode="Filtered time of flight spectrum\nCNN method\nDigital setup", CNN=True)
-#tof_hist_filt(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', cut=0.259, window=(-20,130), bins=150, qdc_min=500, fontsize=fontsize, mode="Filtered time of flight spectrum\nCharge comparisson method\nAnalog setup", CNN=False)
+tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=DigitalCut, window=(-20,130), bins=150, qdc_min=0, fontsize=fontsize, mode="Filtered time of flight spectrum\nCharge comparisson method\nDigital setup", CNN=False)
+tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=0.5, window=(-20,130), bins=150, qdc_min=0, fontsize=fontsize, mode="Filtered time of flight spectrum\nCNN method\nDigital setup", CNN=True)
+tof_hist_filt(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', cut=AnalogCut, window=(-20,130), bins=150, qdc_min=500, fontsize=fontsize, mode="Filtered time of flight spectrum\nCharge comparisson method\nAnalog setup", CNN=False)
 
-#tof_E(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Digital setup')
-#tof_E(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup')
+tof_E(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Digital setup')
+tof_E(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup')
 
-#tof_Edep_Eneutron(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Analog setup', tnlow=30, tnhigh=65)
-#tof_Edep_Eneutron(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup', tnlow=25, tnhigh=50)
+Edep_Eneutron(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Analog setup', tnlow=30, tnhigh=65)
+Edep_Eneutron(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup', tnlow=25, tnhigh=50)
 
-#qdc_hist(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', bins=160, window=(0,16), fontsize=fontsize, title="Energy deposition spectrum\nAnalog setup")
-#qdc_hist(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', bins=80, window=(0,8), fontsize=fontsize, title="Energy deposition spectrum\nDigital setup")
+qdc_hist(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', bins=160, window=(0,16), fontsize=fontsize, title="Energy deposition spectrum\nAnalog setup")
+qdc_hist(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', bins=80, window=(0,8), fontsize=fontsize, title="Energy deposition spectrum\nDigital setup")

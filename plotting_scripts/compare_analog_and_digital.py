@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set(color_codes=True)
+import seaborn as sns; sns.set(color_codes=True, style='whitegrid')
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
 import sys
@@ -11,8 +11,10 @@ sys.path.append('../../analog_tof/')
 sys.path.append('../tof')
 import pyTagAnalysis as pta
 
+c=0.299792458# m/ns
+
 Dthres=40
-D = pd.read_parquet('../data/finalData/data1hour_clean.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
+D = pd.read_parquet('../data/finalData/data1hour_clean.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
 A = pta.load_data('../data/finalData/Data1793_cooked.root')
 A['tof'] = 1000 - A['tdc_det0_yap0']
 
@@ -22,15 +24,15 @@ plt.figure(figsize=(8,8))
 #===QDC Spectra===
 #Digitized
 ax1=plt.subplot(2, 2, 1)
-dcal = np.load('../data/finalData/E_call_digi.npy')
+dcal = np.load('../data/finalData/Ecal_D.npy')
 
-plt.hist(dcal[1]+dcal[0]*D.qdc_lg_fine/1000, bins=500, range=(0,15), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digitized %d events'%(len(D)))
+plt.hist(dcal[1]+dcal[0]*D.qdc_lg/1000, bins=200, range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digitized %d events'%(len(D)))
 plt.xlabel('QDC bin, uncalibrated')
 plt.ylabel('counts')
 #Analog
-acal = np.load('../data/finalData/E_call_analog.npy')
+acal = np.load('../data/finalData/Ecal_A.npy')
 dummy = A.query('0<qdc_det0<5000')
-plt.hist(acal[1]+acal[0]*A.qdc_det0, bins=500, range=(0,15), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup, \n%d events'%len(dummy))
+plt.hist(acal[1]+acal[0]*A.qdc_det0, bins=200, range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup, \n%d events'%len(dummy))
 plt.legend()
 plt.xlabel('Energy $MeV_{ee}$', fontsize=12)
 plt.ylabel('counts', fontsize=12)
@@ -62,8 +64,8 @@ dummy_A['tof'] = (A['tof'] - popt_A[1])*(-Tcal[0])
 dummy_A = dummy_A.query('-20<tof<100')
 #plot ToF
 ax2=plt.subplot(2, 2, 2)
-plt.hist(dummy_D.tof + 3.3, range(-20, 100), histtype='step', alpha=0.75, lw=1.5, label='digitized: %s coincidences'%(len(dummy_D)))
-plt.hist(dummy_A.tof + 3.3, range(-20, 100), histtype='step', alpha=0.75, lw=1.5, label='Analog: %s coincidences'%(len(dummy_A)))
+plt.hist(dummy_D.tof + 1.055/c, range(-20, 100), histtype='step', alpha=0.75, lw=1.5, label='digitized: %s coincidences'%(len(dummy_D)))
+plt.hist(dummy_A.tof + 1.055/c, range(-20, 100), histtype='step', alpha=0.75, lw=1.5, label='Analog: %s coincidences'%(len(dummy_A)))
 plt.legend()
 plt.xlabel('ToF(ns)', fontsize=12)
 plt.ylabel('Counts', fontsize=12)
@@ -74,8 +76,8 @@ ax.tick_params(axis = 'both', which = 'both', labelsize = 12)
 #Different threshold
 ##############################
 
-Dthres=140
-D = pd.read_parquet('../data/finalData/data1hour_clean.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
+Dthres=155
+D = pd.read_parquet('../data/finalData/data1hour_clean.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
 A = pta.load_data('../data/finalData/Data1793_cooked.root')
 A['tof'] = 1000 - A['tdc_det0_yap0']
 
@@ -83,15 +85,16 @@ A['tof'] = 1000 - A['tdc_det0_yap0']
 #===QDC Spectra===
 #Digitized
 ax3=plt.subplot(2, 2, 3)
-dcal = np.load('../data/finalData/E_call_digi.npy')
-
-plt.hist(dcal[1]+dcal[0]*D.qdc_lg_fine/1000, bins=500, range=(0,15), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digitized %d events'%(len(D)))
+dcal = np.load('../data/finalData/Ecal_D.npy')
+w_analog = 1/0.4432267926625903
+w_digital = max(np.histogram(acal[1]+acal[0]*A.qdc_det0, bins=200, weights=[w_analog]*len(A), range=(0,8))[0])/max(np.histogram(dcal[1]+dcal[0]*D.qdc_lg/1000, bins=200, range=(0,8))[0])
+plt.hist(dcal[1]+dcal[0]*D.qdc_lg/1000, weights=[w_digital]*len(D), bins=200, range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digitized %d events'%(len(D)))
 plt.xlabel('QDC bin, uncalibrated')
 plt.ylabel('counts')
 #Analog
-acal = np.load('../data/finalData/E_call_analog.npy')
+acal = np.load('../data/finalData/Ecal_A.npy')
 dummy = A.query('0<qdc_det0<5000')
-plt.hist(acal[1]+acal[0]*A.qdc_det0, bins=500, range=(0,15), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup, \n%d events'%len(dummy))
+plt.hist(acal[1]+acal[0]*A.qdc_det0, bins=200, weights=[w_analog]*len(A), range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup, \n%d events'%len(dummy))
 plt.legend()
 plt.xlabel('Energy $MeV_{ee}$', fontsize=12)
 plt.ylabel('counts', fontsize=12)
@@ -123,8 +126,8 @@ dummy_A['tof'] = (A['tof'] - popt_A[1])*(-Tcal[0])
 dummy_A = dummy_A.query('-20<tof<100')
 #plot ToF
 ax4=plt.subplot(2, 2, 4)
-plt.hist(dummy_D.tof + 3.3, range(-20, 100), histtype='step', alpha=0.75, lw=1.5, label='digitized: %s coincidences'%(len(dummy_D)))
-plt.hist(dummy_A.tof + 3.3, range(-20, 100), histtype='step', alpha=0.75, lw=1.5, label='Analog: %s coincidences'%(len(dummy_A)))
+plt.hist(dummy_D.tof + 1.055/c, range(-20, 100), weights=[w_digital]*len(dummy_D), histtype='step', alpha=0.75, lw=1.5, label='digitized: %s coincidences'%(len(dummy_D)))
+plt.hist(dummy_A.tof + 1.055/c, range(-20, 100), weights=[w_analog]*len(dummy_A), histtype='step', alpha=0.75, lw=1.5, label='Analog: %s coincidences'%(len(dummy_A)))
 plt.legend()
 plt.xlabel('ToF(ns)', fontsize=12)
 plt.ylabel('Counts', fontsize=12)

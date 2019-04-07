@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mc
 import seaborn as sns
-sns.set()
+sns.set(style='ticks')
 import pandas as pd
 import numpy as np
 import dask.dataframe as dd
@@ -9,16 +9,18 @@ from dask.diagnostics import ProgressBar
 
 
 
-D_wobbly = pd.read_parquet('../data/finalData/badevents/D_wobbly.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
-D_cfd_late = pd.read_parquet('../data/finalData/badevents/D_cfd_late.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
-D_cfd_early = pd.read_parquet('../data/finalData/badevents/D_cfd_early.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
-D_cfd_fail = pd.read_parquet('../data/finalData/badevents/D_cfd_fail.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
-D_cutoff = pd.read_parquet('../data/finalData/badevents/D_cutoff.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
-d = dd.read_parquet('../data/finalData/data1hour_pedestal.pq', engine='pyarrow')
+D_wobbly = pd.read_parquet('../../data/finalData/badevents/D_wobbly.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
+D_cfd_late = pd.read_parquet('../../data/finalData/badevents/D_cfd_late.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
+D_cfd_early = pd.read_parquet('../../data/finalData/badevents/D_cfd_early.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
+D_cfd_fail = pd.read_parquet('../../data/finalData/badevents/D_cfd_fail.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
+D_cutoff = pd.read_parquet('../../data/finalData/badevents/D_cutoff.pq', engine='pyarrow').query('amplitude>50 and channel==0').reset_index()
+d = dd.read_parquet('../../data/finalData/data1hour_pedestal.pq', engine='pyarrow')
 d = d.query('amplitude>50 and channel==0')
+d1 = pd.read_parquet('../../data/finalData/data1hour_pedestal.pq', engine='pyarrow', columns=['invalid', 'amplitude', 'channel'])
+d1 = d1.query('amplitude>50 and channel==0')
 with ProgressBar():
-    L = len(d)#2276267#
-    L_acc = len(d.query('invalid==False'))#2186676
+    L =len(d1)# 2264557
+    L_acc = len(d1.query('invalid==False'))
     L_inv = L-L_acc
     L_wob=len(D_wobbly)
     L_late=len(D_cfd_late)
@@ -33,7 +35,7 @@ for i in range(0, len(dflist)):
     dflist[i] = dflist[i].query('amplitude<75').reset_index()
 titlelist = ['(A) Unstable baseline: %s%%'%round(L_wob/L*100, 2),
              '(B) Cfd trigger in baseline determination window: %s%%'%round(L_early/L*100, 4),
-             '(C) Cfd trigger in longgate integration window: %s%%'%round(L_late/L*100, 2),
+             '(C) Cfd trigger too late for longgate integration: %s%%'%round(L_late/L*100, 2),
              '(D) Cfd algorithm failed: %s%%'%round(L_fail/L*100, 5),
              '(E) Pulse amplitude beyond dynamic range of digitizer: %s%%'%round(L_cutoff/L*100, 6)]
 
