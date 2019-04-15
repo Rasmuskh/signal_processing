@@ -29,20 +29,18 @@ from scipy.signal import convolve
 waveFormLegth=300
 
 #training set
-neutrons = pd.read_parquet('data/finalData/CNN/neutrons.pq', engine='pyarrow').query('55000<tof<75000 and amplitude<610').reset_index()
-gammas1 = pd.read_parquet('data/finalData/CNN/gammas1.pq', engine='pyarrow').query('22000<tof<30000 and amplitude<610').reset_index()
-#gammas2 = pd.read_parquet('data/finalData/CNN/gammas2.pq', engine='pyarrow').query('amplitude<610').reset_index()
-#gammas=pd.concat([gammas2, gammas1]).reset_index()
-gammas=gammas1
+#neutrons = pd.read_parquet('data/finalData/CNN/neutrons.pq', engine='pyarrow').query('55000<tof<75000 and amplitude<610').reset_index()
+neutrons = pd.read_parquet('10min_cnnTrainingset_neutrons.pq', engine='pyarrow').reset_index()
+#gammas = pd.read_parquet('data/finalData/CNN/gammas1.pq', engine='pyarrow').query('22000<tof<30000 and amplitude<610').reset_index()
+gammas = pd.read_parquet('10min_cnnTrainingset_gammas.pq', engine='pyarrow').reset_index()
+
 L=min(len(gammas), len(neutrons))
-#neutrons = neutrons.reset_index()
-#gammas = gammas.reset_index()
+neutrons=neutrons.head(L)
+gammas=gammas.head(L)
 
 #testset
 df_test = pd.read_parquet('data/finalData/CNN/test.pq', engine='pyarrow').reset_index()
 df_test10min = pd.read_parquet('data/finalData/CNN/test10min.pq', engine='pyarrow').reset_index()
-
-#df_test = df_test.compute()
 
 
 # def get_samples_train(df):
@@ -82,13 +80,10 @@ x_test=x_test.reshape(len(x_test), window_width, 1)
 y_test = df_test.y
 #model definition
 model = Sequential()
-#model.add(Dropout(0.05))
 model.add(Conv1D(filters=12, kernel_size=9, strides=4, activation='relu', input_shape=(window_width, 1), padding='same'))
-#model.add(Dropout(0.02))
 model.add(MaxPooling1D(2, strides=2))
 
 model.add(Conv1D(filters=12, kernel_size=5, strides=2, activation='relu', padding='same'))
-#model.add(Dropout(0.02))
 model.add(MaxPooling1D(2, stride=2))
 
 model.add(Flatten(name='flat'))
@@ -100,7 +95,7 @@ model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
 #checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 #callbacks_list = [checkpoint]
 # Fit the model
-epochs = 200
+epochs = 2
 hist = model.fit(x_train, y_train, batch_size=50, epochs=epochs, validation_data=(x_test, y_test),verbose=2)#, callbacks=callbacks_list)
 print(hist.history)
 

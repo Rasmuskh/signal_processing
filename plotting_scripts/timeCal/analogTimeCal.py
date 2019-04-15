@@ -4,16 +4,15 @@ import pandas as pd
 import numpy as np
 from dask.diagnostics import ProgressBar
 
-import seaborn as sns; sns.set(color_codes=True)
+import seaborn as sns; sns.set(style='whitegrid')
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
 import sys
-sys.path.append('../tof')
-sys.path.append('../../analog_tof')
+sys.path.append('../../../analog_tof')
 import pyTagAnalysis as pta
 
 
-N = pta.load_data('../data/finalData/analogTimeCal/Data1801_cooked.root')
+N = pta.load_data('../../data/finalData/analogTimeCal/Data1801_cooked.root')
 minimum, maximum = 0, 5000
 
 def gaus(x, a, x0, sigma):
@@ -48,7 +47,7 @@ for i in range(0, npeaks):
     print(i)
     popt[i], pcov[i] = fit_gaus(p_l[i], p_r[i], N)
 
-plt.figure(figsize=(6.2,5))
+plt.figure(figsize=(6.2,4))
 fac=1
 # for i in range(0, npeaks):
 #     ax = plt.subplot(6,3,i+1+6)

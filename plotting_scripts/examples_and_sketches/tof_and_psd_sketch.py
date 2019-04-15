@@ -14,14 +14,14 @@ from scipy.signal import convolve
 
 
 fontsize = 10
-D = pd.read_parquet('../data/finalData/data1hour_CNN.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'pred', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'baseline_std']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<=amplitude<610')
+D = pd.read_parquet('../../data/finalData/finalData.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'pred', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'baseline_std']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<=amplitude<610')
 D['qdc_lg'] = D['qdc_lg_fine']
 D['qdc_sg'] = D['qdc_sg_fine']
 D['ps'] = D['ps_fine']
 fsg=25000
 flg=3000
 D['ps'] = ((flg*500+D['qdc_lg_fine'])-(fsg*60+D['qdc_sg_fine']))/(flg*500+D['qdc_lg_fine']).astype(np.float64)
-Dcal=np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/E_call_digi.npy')
+Dcal=np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/Ecal_D.npy')
 Tshift_D = np.load('/home/rasmus/Documents/ThesisWork/code/tof/data/finalData/Tshift_D.npy')
 D['E'] = (D.qdc_lg*Dcal[0]+Dcal[1])/1000
 D['tof'] = (D['tof'] - Tshift_D[1])/1000 + 3.3
@@ -43,13 +43,16 @@ plt.figure(figsize=(6.2,2.1))
 plt.plot(H, color='black')
 plt.box(on=None)
 plt.xlim(5,100)
-textstr='Sketch of a Time of Flight Spectrum'
-plt.text(30, 460, textstr, fontsize= fontsize, verticalalignment='top',bbox=dict(facecolor='none', linewidth=1.5, edgecolor='black', pad=0.5, boxstyle='square'))
+#textstr='Sketch of a Time of Flight Spectrum'
+#plt.text(30, 460, textstr, fontsize= fontsize, verticalalignment='top',bbox=dict(facecolor='none', linewidth=1.5, edgecolor='black', pad=0.5, boxstyle='square'))
 ax = plt.gca()
-ax.annotate('Neutrons', xy=(55, 150), xytext=(72 ,200), fontsize= fontsize, arrowprops=dict(facecolor='black', shrink=0.05, width=2, frac=0.10, headwidth=9),)
-ax.annotate('Gammas', xy=(15, 150), xytext=(30,200), fontsize= fontsize, arrowprops=dict(facecolor='black', shrink=0.05, width=2, frac=0.10, headwidth=9),)
-plt.xticks([], [])
-plt.yticks([], [])
+ax.annotate('$\gamma, n$', xy=(55, 150), xytext=(72 ,300), fontsize= fontsize, arrowprops=dict(facecolor='black', shrink=0.05, width=1, frac=0.10, headwidth=9),)
+ax.annotate('$\gamma, \gamma$', xy=(15, 150), xytext=(30,300), fontsize= fontsize, arrowprops=dict(facecolor='black', shrink=0.05, width=1, frac=0.10, headwidth=9),)
+
+plt.xlim(-10,155)
+plt.xlim(-10,200)
+#plt.xticks([], [])
+#plt.yticks([], [])
 plt.ylabel('Counts')
 plt.xlabel('Time(ns)')
 plt.show()

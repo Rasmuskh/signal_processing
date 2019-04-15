@@ -1,12 +1,13 @@
 # coding: utf-8
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set()
+import seaborn as sns; sns.set(style='whitegrid')
 import numpy as np
 from scipy.signal import convolve
 from scipy import asarray as ar,exp
+import dask.dataframe as dd
 
-D=pd.read_parquet('../data/finalData/data10min_clean_dropped_samples_CNNpred.pq.pq/',engine='pyarrow')
+D=dd.read_parquet('../../data/finalData/finalData.pq/',engine='pyarrow').head(50000)
 N=D.query('pred>0.9 and 0<amplitude<600').reset_index()
 Y=D.query('pred<0.1 and 0<amplitude<600').reset_index()
 D=0
@@ -33,7 +34,7 @@ kernel=kernel/sum(kernel)
 #ax2=plt.subplot(2,1,2)
 n=convolve(-n/min(n), kernel, method='direct', mode='same')
 y=convolve(-y/min(y), kernel, method='direct', mode='same')
-plt.figure(figsize=(6.2,3))
+plt.figure(figsize=(6.2,2.4))
 plt.plot(n, color='blue', lw=2, linestyle='-', label='Neutron')
 plt.plot(y, color='red', lw=2, linestyle='--', label='Gamma')
 plt.legend(fontsize=12)
@@ -43,5 +44,5 @@ ax.tick_params(axis = 'both', which = 'both', labelsize = 12)
 plt.xlabel('Time (ns)', fontsize=12)
 plt.ylabel('Amplitude (arb. units)', fontsize=12)
 plt.tight_layout()
-plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalSetup/pulse_types.pdf', format='pdf')
+plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalSetup/pulse_types.png', format='png')
 plt.show()

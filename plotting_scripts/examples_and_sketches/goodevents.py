@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mc
 import seaborn as sns
-sns.set()
+sns.set(style='whitegrid')
 import pandas as pd
 import numpy as np
 import dask.dataframe as dd
@@ -10,7 +10,7 @@ from dask.diagnostics import ProgressBar
 
 
 
-d = dd.read_parquet('../data/finalData/data1hour_pedestal.pq', engine='pyarrow')
+d = dd.read_parquet('../../data/finalData/finalData.pq', engine='pyarrow')
 d = d.query('amplitude>40 and channel==0 and invalid==False and 0<ps<1').reset_index()
 d=d.head(50)
 

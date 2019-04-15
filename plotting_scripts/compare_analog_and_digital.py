@@ -10,16 +10,18 @@ import dask.dataframe as dd
 sys.path.append('../../analog_tof/')
 sys.path.append('../tof')
 import pyTagAnalysis as pta
+import matplotlib.ticker as plticker
+
 
 c=0.299792458# m/ns
 
 Dthres=40
-D = pd.read_parquet('../data/finalData/data1hour_clean.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
+D = pd.read_parquet('../data/finalData/finalData.pq/', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
 A = pta.load_data('../data/finalData/Data1793_cooked.root')
 A['tof'] = 1000 - A['tdc_det0_yap0']
 
 #figure size
-plt.figure(figsize=(8,8))
+plt.figure(figsize=(6.2,6))
 
 #===QDC Spectra===
 #Digitized
@@ -77,7 +79,7 @@ ax.tick_params(axis = 'both', which = 'both', labelsize = 12)
 ##############################
 
 Dthres=155
-D = pd.read_parquet('../data/finalData/data1hour_clean.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
+D = pd.read_parquet('../data/finalData/finalData.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg', 'qdc_sg', 'ps', 'tof', 'invalid']).query('channel==0 and invalid==False and %s<=amplitude<618'%Dthres)
 A = pta.load_data('../data/finalData/Data1793_cooked.root')
 A['tof'] = 1000 - A['tdc_det0_yap0']
 
@@ -136,4 +138,21 @@ ax.tick_params(axis = 'both', which = 'both', labelsize = 12)
 
 
 plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/comp.pdf', format='pdf')
+plt.show()
+
+H_D = np.histogram(dcal[1]+dcal[0]*D.qdc_lg/1000, weights=[w_digital]*len(D), bins=200, range=(0,8))
+H_A = np.histogram(acal[1]+acal[0]*A.qdc_det0, bins=200, weights=[w_analog]*len(A), range=(0,8))
+def getBinCenters(bins):
+    """ From Hanno Perrey calculate center values for given bins """
+    return np.array([np.mean([bins[i],bins[i+1]]) for i in range(0, len(bins)-1)])
+#figure size
+plt.figure(figsize=(6.2,2.5))
+plt.plot(getBinCenters(H_D[1]), H_D[0]/H_A[0], label='Count ratio, Digital/Analog')
+loc = plticker.MultipleLocator(base=1.0)
+ax = plt.gca()
+ax.yaxis.set_major_locator(loc)
+plt.xlabel('Energy $MeV_{ee}$', fontsize=12)
+plt.ylabel('Counts', fontsize=12)
+plt.legend()
+plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/QDC_ratio.pdf', format='pdf')
 plt.show()

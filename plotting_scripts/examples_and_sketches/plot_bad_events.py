@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mc
 import seaborn as sns
-sns.set(style='ticks')
+sns.set(style='whitegrid')
 import pandas as pd
 import numpy as np
 import dask.dataframe as dd
@@ -56,10 +56,12 @@ for k in range(0,4):
         plt.ylim(-75, 50)
     else:
         plt.ylim(-75, 50)
+    if k!=3:
+        plt.gca().set_xticklabels([''])
     ax = plt.gca()
     ax.tick_params(axis = 'both', which = 'both', labelsize = 10)
-    if k!=3:
-        ax.axes.get_xaxis().set_visible(False)
+
+    #    ax.axes.get_xaxis().set_visible(False)
 plt.tight_layout()
 plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalSetup/badevents.pdf', format='pdf')
 plt.show()

@@ -28,7 +28,7 @@ if mode == "A" or mode == "a":
     p5, p6 = 2500, 3100
 elif mode == "D" or mode == "d":
     mode = 'D'
-    N = pd.read_parquet('../data/finalData/data1hour_CNN.pq', engine='pyarrow', columns=['pred', 'cfd_trig_rise', 'window_width', 'tof', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'qdc_lg', 'qdc_sg', 'ps', 'fine_baseline_offset']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<amplitude<6100')
+    N = pd.read_parquet('../data/finalData/finalData.pq', engine='pyarrow', columns=['pred', 'cfd_trig_rise', 'window_width', 'tof', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'qdc_lg', 'qdc_sg', 'ps', 'fine_baseline_offset']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<amplitude<6100')
     N['qdc_lg'] = (N['qdc_lg']+500*N['fine_baseline_offset'])/1000
     C  = pd.read_parquet('../data/finalData/specialdata/cobalt60_5min.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'qdc_lg', 'qdc_sg', 'ps']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<=amplitude<6100')
     C['qdc_lg'] = C['qdc_lg_fine']/1000
@@ -38,8 +38,7 @@ elif mode == "D" or mode == "d":
     p5, p6 = 14500, 17000
 def getBinCenters(bins):
     """ From Hanno Perrey calculate center values for given bins """
-    return np.array([np.mean([bins[i],bins[i+1]]) for i in range(0,
-len(bins)-1)])
+    return np.array([np.mean([bins[i],bins[i+1]]) for i in range(0,len(bins)-1)])
 
 def gaus(x, a, x0, sigma):
     return a*exp(-(x-x0)**2/(2*sigma**2))
@@ -77,24 +76,28 @@ plt.figure(figsize=(6.2,5))
 #plot raw qdc spectrum
 ax1 = plt.subplot(2, 1, 1)
 l1 = minimum; l2 = maximum
-b =  int((maximum-minimum)/20)
+b =  int((maximum-minimum)/10)
 fac = (l2-l1)/b
-plt.hist(N.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=1)
+plt.hist(N.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=1, label='Pu/Be')
 if mode == "D":
-    plt.hist(C.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=2)
+    plt.hist(C.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=2, label='$^{60}$Co')
 #plot gaussian fits
 x = np.linspace(p1, p2, (p2-p1)*1)
 if mode == "A":
         lbl = "pedestal"
 else:
         lbl = "1.33 MeV"
-plt.plot(x, fac*gaus(x, popt_1[0], popt_1[1], popt_1[2]), ms=6, zorder=4, label=lbl, color=colorlist[0])
+if mode == 'D':
+    plt.plot(x, fac*gaus(x, popt_1[0], popt_1[1], popt_1[2]), ms=6, zorder=4, label=lbl, color=colorlist[0], linestyle=':')
 x = np.linspace(p3, p4, (p4-p3)*1)
-plt.plot(x, fac*gaus(x, popt_2[0], popt_2[1], popt_2[2]), ms=6, zorder=4, label='2.23 MeV', color=colorlist[1])
+plt.plot(x, fac*gaus(x, popt_2[0], popt_2[1], popt_2[2]), ms=6, zorder=4, label='2.23 MeV', color=colorlist[1], linestyle='-')
 x = np.linspace(p5, p6, (p6-p5)*1)
-plt.plot(x, fac*gaus(x, popt_3[0], popt_3[1], popt_3[2]), ms=6, zorder=5, label='4.44 MeV', color=colorlist[2])
+plt.plot(x, fac*gaus(x, popt_3[0], popt_3[1], popt_3[2]), ms=6, zorder=5, label='4.44 MeV', color=colorlist[2], linestyle='--')
 plt.legend(loc='upper right')
-plt.xlabel('QDC bin', fontsize=fontsize)
+if mode == 'A':
+    plt.xlabel('QDC channel', fontsize=fontsize)
+else:
+    plt.xlabel('Digitizer pulse integration', fontsize=fontsize)
 plt.ylabel('Counts', fontsize=fontsize)
 plt.ylim(0.1, 3*10**5)
 plt.xlim(minimum, maximum)
@@ -127,9 +130,9 @@ def lin(x, a, b):
 popt_lin = np.polyfit(qdclist, Elist, deg=1, w=1/errList)
 
 x = np.linspace(minimum, int(max(qdclist)*1.1), 2000)
-plt.plot(x, x*popt_lin[0]+popt_lin[1])
+plt.plot(x, x*popt_lin[0]+popt_lin[1], lw=1.5)
 for i in range(0, 3):
-    plt.errorbar(qdclist[i], Elist[i], color=colorlist[i], xerr=errList[i], fmt='o', ms=4, lw=1, label = labellist[i])
+    plt.errorbar(qdclist[i], Elist[i], color=colorlist[i], xerr=errList[i], fmt='o', ms=3, lw=1.5, label = labellist[i])
 plt.legend(frameon=True)
 plt.xlabel('QDC bin', fontsize=fontsize)
 plt.ylabel('MeV$_{ee}$', fontsize=fontsize)

@@ -48,7 +48,7 @@ for i in range(0, npeaks):
     print(i)
     popt[i], pcov[i] = fit_gaus(p_l[i], p_r[i], N)
 
-plt.figure(figsize=(9,12.5))
+plt.figure(figsize=(6.2,4))
 fac=1
 for i in range(0, npeaks):
     ax = plt.subplot(4,3,i+1)
