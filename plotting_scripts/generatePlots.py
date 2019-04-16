@@ -291,29 +291,30 @@ def qdc_hist(df, outpath, bins, window, title, fontsize):
 fontsize = 10
 DigitalCut = 0.222
 AnalogCut = 0.259
+CNN_cut = 0.5
 # tof_hist(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', window=(-20,130), bins=150, qdc_min=0, tNmax=75, fontsize=fontsize, mode="Time of flight spectrum\nDigital setup", tnlow=31, tnhigh=65)
 # tof_hist(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', window=(-20,130), bins=150, qdc_min=500, tNmax=50, fontsize=fontsize, mode="Time of flight spectrum\nAnalog setup", tnlow=28, tnhigh=50)
 
-# psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', CNN=False, cut=DigitalCut, down=0, up=0.4, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2, 0.15, 2.5, 0.01], arrow2=[4.2, 0.14, 4.7, 0.01], box=[2, 0.38])
-# psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/',  CNN=True, cut=0.5, down=0, up=1, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2, 0.1, 2.5, 0.4], arrow2=[4.2, 0.05, 4.7, 0.4], box=[2, 0.65])
-# psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/',  CNN=False, cut=AnalogCut, down=0.1, up=0.5, qdc_min=500, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2, 0.2, 2.5, 0.11], arrow2=[4.2, 0.2, 4.7, 0.11], box=[2, 0.48])
+#psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', CNN=False, cut=DigitalCut, down=0, up=0.5, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2, 0.15, 2.5, 0.01], arrow2=[4.2, 0.14, 4.7, 0.01], box=[2, 0.48])
+#psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/',  CNN=True, cut=CNN_cut, down=0, up=1, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2.1, 0.1, 2.5, 0.4], arrow2=[4.2, 0.05, 4.7, 0.4], box=[2, 0.65])
+#psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/',  CNN=False, cut=AnalogCut, down=0, up=0.5, qdc_min=500, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2, 0.2, 2.5, 0.11], arrow2=[4.2, 0.2, 4.7, 0.11], box=[2, 0.48])
 
-tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=0, cut=DigitalCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.3], txt_xy_neutron=[70, 0.45], arrow_xy_gamma=[5, 0.17], arrow_xy_neutron=[50, 0.3], CNN=False)
-tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=0, cut=0.5, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.7], arrow_xy_gamma=[4, 0.2], arrow_xy_neutron=[45, 0.9], CNN=True)
-tof_psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=500, cut=AnalogCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.48], txt_xy_neutron=[60, 0.48], arrow_xy_gamma=[4, 0.28], arrow_xy_neutron=[45, 0.38], CNN=False)
+# tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=0, cut=DigitalCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.3], txt_xy_neutron=[70, 0.45], arrow_xy_gamma=[5, 0.17], arrow_xy_neutron=[50, 0.3], CNN=False)
+# tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=0, cut=CNN_cut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.7], arrow_xy_gamma=[4, 0.2], arrow_xy_neutron=[45, 0.9], CNN=True)
+# tof_psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=500, cut=AnalogCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.48], txt_xy_neutron=[60, 0.48], arrow_xy_gamma=[4, 0.28], arrow_xy_neutron=[45, 0.38], CNN=False)
 
-# tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=DigitalCut, window=(-20,160), bins=180, qdc_min=0, fontsize=fontsize, psmode="CC", mode='Digital setup\nCharge comparisson', CNN=False, Blim=(70, 150), Nlim = (32, 60), Ylim = (0,8))
-# tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=0.5, window=(-20,160), bins=180, qdc_min=0, fontsize=fontsize, psmode="CNN", mode='Digital setup\nCNN', CNN=True, Blim=(70, 150), Nlim = (32, 60), Ylim = (0,8))
-# tof_hist_filt(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', cut=AnalogCut, window=(-20,160), bins=180, qdc_min=500, fontsize=fontsize, psmode="CC", mode='Analog setup\nCharge comparisson', CNN=False,  Blim=(70, 150), Nlim = (29, 55), Ylim = (0,8))
+#tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=DigitalCut, window=(-20,160), bins=180, qdc_min=0, fontsize=fontsize, psmode="CC", mode='Digital setup\nCharge comparisson', CNN=False, Blim=(70, 150), Nlim = (32, 60), Ylim = (0,8))
+#tof_hist_filt(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', cut=CNN_cut, window=(-20,160), bins=180, qdc_min=0, fontsize=fontsize, psmode="CNN", mode='Digital setup\nCNN', CNN=True, Blim=(70, 150), Nlim = (32, 60), Ylim = (-10,15))
+#tof_hist_filt(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', cut=AnalogCut, window=(-20,160), bins=180, qdc_min=500, fontsize=fontsize, psmode="CC", mode='Analog setup\nCharge comparisson', CNN=False,  Blim=(70, 150), Nlim = (29, 55), Ylim = (0,8))
 
 #compare_PSD(D)
 
 
-tof_E(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Digital setup')
-tof_E(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup')
+# tof_E(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Digital setup')
+# tof_E(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup')
 
-Edep_Eneutron(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Analog setup', tnlow=30, tnhigh=65)
-Edep_Eneutron(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup', tnlow=25, tnhigh=50)
+# Edep_Eneutron(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', fontsize=12, title='Analog setup', tnlow=30, tnhigh=65)
+# Edep_Eneutron(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', fontsize=12, title='Analog setup', tnlow=25, tnhigh=50)
 
 # # qdc_hist(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', bins=160, window=(0,16), fontsize=fontsize, title="Energy deposition spectrum\nAnalog setup")
 # # qdc_hist(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', bins=80, window=(0,8), fontsize=fontsize, title="Energy deposition spectrum\nDigital setup")
