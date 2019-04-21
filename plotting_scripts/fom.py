@@ -1,12 +1,11 @@
 # coding: utf-8
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set()
 import dask.dataframe as dd
 import pandas as pd
 import numpy as np
 from dask.diagnostics import ProgressBar
 
-import seaborn as sns; sns.set(color_codes=True, style='whitegrid')
+import seaborn as sns; sns.set(color_codes=True, style='ticks')
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
 import sys
@@ -61,7 +60,7 @@ def get_fom(Emin=0, mode='digital'):
     #plot smoothed spectrum
 
     plt.plot(x, H[0], label='Pulse shape histogram', drawstyle='steps-mid')
-    plt.plot(x, G,label='Smoothened pulse histogram', drawstyle='steps-mid')
+    #plt.plot(x, G,label='Smoothened pulse histogram', drawstyle='steps-mid')
 
     #peaks
     peaks = np.r_[True, G[1:] > G[:-1]] & np.r_[G[:-1] > G[1:], True]
@@ -78,9 +77,9 @@ def get_fom(Emin=0, mode='digital'):
     print(Vlist)
     ax = plt.gca()
     ylim = ax.get_ylim()
-    plt.axvline(Plist[0]/bins, ymin=0, ymax=G[Plist[0]]/ylim[1], lw=1.2, alpha=0.7, color='black')
-    plt.axvline(Plist[1]/bins, ymin=0, ymax=G[Plist[1]]/ylim[1], lw=1.2, alpha=0.7, color='black')
-    plt.axvline(Vlist[0]/bins, ymin=0, ymax=G[Vlist[0]]/ylim[1], label='extreme points', lw=1.2, alpha=0.7, color='black')
+    #plt.axvline(Plist[0]/bins, ymin=0, ymax=G[Plist[0]]/ylim[1], lw=1.2, alpha=0.7, color='black')
+    #plt.axvline(Plist[1]/bins, ymin=0, ymax=G[Plist[1]]/ylim[1], lw=1.2, alpha=0.7, color='black')
+    #plt.axvline(Vlist[0]/bins, ymin=0, ymax=G[Vlist[0]]/ylim[1], label='extreme points', lw=1.2, alpha=0.7, color='black')
 
 
     #fit gaussian
@@ -105,18 +104,18 @@ def get_fom(Emin=0, mode='digital'):
     FoM= (P2[1]-P1[1])/(fwhm1+fwhm2)
     print('fom = ', FoM)
     x = np.linspace(0.0005,0.9995,1000)
-    plt.plot(x, gaus(x, P1[0], P1[1], P1[2]), ms=1, label='Gaussian fit: FWHM = %s'%round(fwhm1, 2))
-    plt.plot(x, gaus(x, P2[0], P2[1], P2[2]), ms=1, label='Gaussian fit: FWHM = %s'%round(fwhm2, 2))
+    plt.plot(x, gaus(x, P1[0], P1[1], P1[2]), ms=1, label='Fit: FWHM = %s'%round(fwhm1, 2))
+    plt.plot(x, gaus(x, P2[0], P2[1], P2[2]), ms=1, label='Fit: FWHM = %s'%round(fwhm2, 2))
     plt.xlim(0,0.7)
     plt.ylim(0,)
     plt.xlabel('PS', fontsize=10)
     plt.ylabel('Counts', fontsize=10)
     ax = plt.gca()
     ax.tick_params(axis = 'both', which = 'both', labelsize = 10)
-    plt.legend(loc='best', bbox_to_anchor=(0.5, 0., 0.5, 0.5))
+    plt.legend(loc=4)#, bbox_to_anchor=(0.5, 0., 0.5, 0.5))
 
     #use the parameter to generate the psd spectrum
-    plt.axes([.55, 0.65, .4, .3], facecolor='white')
+    plt.axes([.54, 0.63, .4, .3], facecolor='white')
     dummy=dummy.query('0<ps_new<0.5')
     plt.hexbin((Ecal[1] + Ecal[0]*dummy.qdc_lg), dummy.ps_new, cmap='viridis', gridsize=(100,100), extent=[0,6,0,0.5])
     plt.xlabel('MeV$_{ee}$', fontsize=10)
@@ -126,7 +125,7 @@ def get_fom(Emin=0, mode='digital'):
     ax.tick_params(axis = 'both', which = 'both', labelsize = 10)
     plt.tight_layout()
 
-    #plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/FOM_%s.pdf'%mode,format='pdf')
+    plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/FOM_%s.pdf'%mode,format='pdf')
     plt.show()
     #plt.close()
     print('%s: '%mode, Vlist[0])
