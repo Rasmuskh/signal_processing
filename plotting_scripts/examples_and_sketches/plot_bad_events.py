@@ -33,11 +33,11 @@ dflist = [D_wobbly, D_cfd_early, D_cfd_late, D_cfd_fail, D_cutoff]
 #Get similar scales
 for i in range(0, len(dflist)):
     dflist[i] = dflist[i].query('amplitude<75').reset_index()
-titlelist = ['(A) Unstable baseline: %s%%'%round(L_wob/L*100, 2),
-             '(B) Cfd trigger in baseline determination window: %s%%'%round(L_early/L*100, 4),
-             '(C) Cfd trigger too late for longgate integration: %s%%'%round(L_late/L*100, 2),
-             '(D) Cfd algorithm failed: %s%%'%round(L_fail/L*100, 5),
-             '(E) Pulse amplitude beyond dynamic range of digitizer: %s%%'%round(L_cutoff/L*100, 6)]
+titlelist = ['(a) Unstable baseline: %s%%'%round(L_wob/L*100, 1),
+             '(b) CFD trigger in baseline determination window: %s%%'%round(L_early/L*100, 4),
+             '(c) CFD trigger too late for LG integration: %s%%'%round(L_late/L*100, 2),
+             '(d) CFD algorithm failed: %s%%'%round(L_fail/L*100, 5),
+             '(e) Pulse amplitude beyond dynamic range of digitizer: %s%%'%round(L_cutoff/L*100, 6)]
 
 
 plt.figure(figsize=(6.2,8))
@@ -51,9 +51,9 @@ for k in range(0,4):
         plt.scatter(np.linspace(0, 1203, 1204), dflist[k].samples[i].astype(np.float64)*1000/1023, s=0.7, color=colorlist[i])
     plt.title(titlelist[k], fontsize=10)
     plt.ylabel('mV', fontsize=10)
-    plt.xlabel('t(ns)', fontsize=10)
-    if k==4:
-        plt.ylim(-75, 50)
+    
+    if k==3:
+        plt.xlabel('t (ns)', fontsize=10)
     else:
         plt.ylim(-75, 50)
     if k!=3:
@@ -63,5 +63,5 @@ for k in range(0,4):
 
     #    ax.axes.get_xaxis().set_visible(False)
 plt.tight_layout()
-plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalSetup/badevents.pdf', format='pdf')
+plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalSetup/badevents.png', format='png')
 plt.show()

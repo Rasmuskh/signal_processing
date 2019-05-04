@@ -22,7 +22,7 @@ if mode == "A" or mode == "a":
     N = pta.load_data('../data/finalData/Data1793_cooked.root')
     N['qdc_lg'] = N['qdc_det0']
 
-    minimum, maximum = -100, 5000
+    minimum, maximum = -100, 4200
     p1, p2 = 60, 70
     p3, p4 = 1100, 1600
     p5, p6 = 2500, 3100
@@ -32,7 +32,7 @@ elif mode == "D" or mode == "d":
     N['qdc_lg'] = (N['qdc_lg']+500*N['fine_baseline_offset'])/1000
     C  = pd.read_parquet('../data/finalData/specialdata/cobalt60_5min.pq', engine='pyarrow', columns=['cfd_trig_rise', 'window_width', 'channel', 'amplitude', 'qdc_lg_fine', 'qdc_sg_fine', 'ps_fine', 'qdc_lg', 'qdc_sg', 'ps']).query('channel==0 and 20<cfd_trig_rise/1000<window_width-500 and 40<=amplitude<6100')
     C['qdc_lg'] = C['qdc_lg_fine']/1000
-    minimum, maximum = -2000, 60000
+    minimum, maximum = -2000, 27000
     p1, p2 = 3200, 5000
     p3, p4 = 6200, 8900
     p5, p6 = 14500, 17000
@@ -72,13 +72,13 @@ errList = np.array([adc_err_1, adc_err_2, adc_err_3])
 
 
 #Plot stuff
-plt.figure(figsize=(6.2,5))
+plt.figure(figsize=(6.2,6))
 #plot raw qdc spectrum
 ax1 = plt.subplot(2, 1, 1)
 l1 = minimum; l2 = maximum
 b =  int((maximum-minimum)/10)
 fac = (l2-l1)/b
-plt.hist(N.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=1, label='Pu/Be')
+plt.hist(N.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=1, label='$^\mathrm{238}$Pu/$^\mathrm{9}$Be')
 if mode == "D":
     plt.hist(C.qdc_lg, bins=b, range=(l1,l2), histtype='step', lw=1, log=True, zorder=2, label='$^{60}$Co')
 #plot gaussian fits
@@ -88,16 +88,20 @@ if mode == "A":
 else:
         lbl = "1.33 MeV"
 if mode == 'D':
-    plt.plot(x, fac*gaus(x, popt_1[0], popt_1[1], popt_1[2]), ms=6, zorder=4, label=lbl, color=colorlist[0], linestyle=':')
+    plt.plot(x, fac*gaus(x, popt_1[0], popt_1[1], popt_1[2]), ms=6, zorder=4, label=lbl, color=colorlist[0], linestyle='-')
 x = np.linspace(p3, p4, (p4-p3)*1)
 plt.plot(x, fac*gaus(x, popt_2[0], popt_2[1], popt_2[2]), ms=6, zorder=4, label='2.23 MeV', color=colorlist[1], linestyle='-')
 x = np.linspace(p5, p6, (p6-p5)*1)
-plt.plot(x, fac*gaus(x, popt_3[0], popt_3[1], popt_3[2]), ms=6, zorder=5, label='4.44 MeV', color=colorlist[2], linestyle='--')
+plt.plot(x, fac*gaus(x, popt_3[0], popt_3[1], popt_3[2]), ms=6, zorder=5, label='4.44 MeV', color=colorlist[2], linestyle='-')
 plt.legend(loc='upper right')
 if mode == 'A':
     plt.xlabel('QDC channel', fontsize=fontsize)
 else:
     plt.xlabel('Digitizer pulse integration', fontsize=fontsize)
+    plt.axvline(x=p89_1,color=colorlist[0], ls='-', lw=1, alpha=0.7)
+plt.axvline(x=p89_2,color=colorlist[1], ls='-', lw=1, alpha=0.7)
+plt.axvline(x=p89_3,color=colorlist[2], ls='-', lw=1, alpha=0.7)
+
 plt.ylabel('Counts', fontsize=fontsize)
 plt.ylim(0.1, 3*10**5)
 plt.xlim(minimum, maximum)
@@ -129,12 +133,27 @@ def lin(x, a, b):
 
 popt_lin = np.polyfit(qdclist, Elist, deg=1, w=1/errList)
 
-x = np.linspace(minimum, int(max(qdclist)*1.1), 2000)
-plt.plot(x, x*popt_lin[0]+popt_lin[1], lw=1.5)
+x = np.linspace(minimum, int(max(qdclist)*2), 4000)
+if mode=="D":
+    plt.plot(x, x*popt_lin[0]+popt_lin[1], lw=1.5,label='fit: E(x) = %s$\cdot 10^{-3}\dfrac{\mathrm{MeV_{ee}}}{channel}\cdot$x %s$\mathrm{MeV_{ee}}$'%(round(1000*popt_lin[0], 2), round(popt_lin[1], 2) ) )
+if mode=="A":
+    plt.plot(x, x*popt_lin[0]+popt_lin[1], lw=1.5,label='fit: E(x) = %s$\cdot 10^{-3}\dfrac{\mathrm{MeV_{ee}}}{channel}\cdot$x %s$\mathrm{MeV_{ee}}$'%(round(1000*popt_lin[0], 2), round(popt_lin[1], 2) ) )
 for i in range(0, 3):
     plt.errorbar(qdclist[i], Elist[i], color=colorlist[i], xerr=errList[i], fmt='o', ms=3, lw=1.5, label = labellist[i])
-plt.legend(frameon=True)
-plt.xlabel('QDC bin', fontsize=fontsize)
+
+#if mode == 'A':
+    #plt.axvline(popt_1[1],color=colorlist[0], ls='-', lw=1)
+if mode == 'D':
+    plt.axvline(p89_1,color=colorlist[0], ls='-', lw=1, alpha=0.7)
+plt.axvline(x=p89_2,color=colorlist[1], ls='-', lw=1, alpha=0.7)
+plt.axvline(x=p89_3,color=colorlist[2], ls='-', lw=1, alpha=0.7)
+plt.legend(frameon=False)
+plt.xlim(minimum, maximum)
+plt.ylim(-1, 8)
+if mode == 'A':
+    plt.xlabel('QDC channel', fontsize=fontsize)
+else:
+    plt.xlabel('Digitizer pulse integration', fontsize=fontsize)
 plt.ylabel('MeV$_{ee}$', fontsize=fontsize)
 ax = plt.gca()
 ax.tick_params(axis = 'both', which = 'both', labelsize = fontsize)
@@ -159,10 +178,10 @@ ax4.set_xlim(popt_lin[1]+ (minimum)*popt_lin[0], popt_lin[1]+ (maximum)*popt_lin
 plt.xlabel('MeV$_{ee}$', fontsize=fontsize)
 plt.tight_layout()
 
-if mode == "A":
-    plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/Ecall.pdf', format='pdf')
-else:
-    plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/Ecall.pdf', format='pdf')
+# if mode == "A":
+#     plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/Ecall.pdf', format='pdf')
+# else:
+#     plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/Ecall.pdf', format='pdf')
 plt.show()
 
 

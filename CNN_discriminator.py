@@ -38,7 +38,7 @@ neutrons=neutrons.head(L)
 gammas=gammas.head(L)
 
 #testset
-df_test = pd.read_parquet('data/finalData/CNN/test.pq', engine='pyarrow').reset_index()#.query('(20000<=tof<=30000) or (53000<=tof<=78000)').reset_index()
+df_test = pd.read_parquet('data/finalData/CNN/test.pq', engine='pyarrow').reset_index().query('(22000<=tof<=30000) or (55000<=tof<=75000)').reset_index()
 df_test10min = pd.read_parquet('data/finalData/CNN/test10min.pq', engine='pyarrow').reset_index()
 
 
@@ -97,12 +97,12 @@ model.add(Dense(1, activation='sigmoid', name='preds'))
 
 opt = optimizers.Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
 model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
-filepath="CNN_models3/weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=False, mode='max')
-callbacks_list = [checkpoint]
+#filepath="CNN_models4/weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+#checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=False, mode='max')
+#callbacks_list = [checkpoint]
 # Fit the model
-epochs = 200
-hist = model.fit(x_train, y_train, batch_size=50, epochs=epochs, validation_data=(x_test, y_test),verbose=2, callbacks=callbacks_list)
+epochs = 9
+hist = model.fit(x_train, y_train, batch_size=50, epochs=epochs, validation_data=(x_test, y_test),verbose=2)#, callbacks=callbacks_list)
 print(hist.history)
 
 #model_path='weights-improvement-08-0.87.hdf5'

@@ -38,12 +38,12 @@ def fit_gaus(left, right, df):
 def plot_E_comp(df_D, df_A, w_A, w_D):
     thrList=[50, 155]
     d = df_D.query('amplitude>%s'%(thrList[0]))
-    plt.hist(d.E, weights=[1]*len(d), bins=200, range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nRaw: %.2fx$10^6$ events'%(len(df_D)/10**6))
+    plt.hist(d.E, weights=[1]*len(d), bins=150, range=(0,6), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nRaw: %.2fx$10^6$ events'%(len(df_D)/10**6))
     d = df_D.query('amplitude>%s'%(thrList[1]))
 
 
-    plt.hist(d.E, weights=[w_D]*len(d), bins=200, range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nNormalized')
-    plt.hist(df_A.E, weights=[w_A]*len(df_A), bins=200, range=(0,8), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup\nLivetime corrected: %.2fx$10^6$ events'%(w_A*len(df_A)/10**6))
+    plt.hist(d.E, weights=[w_D]*len(d), bins=150, range=(0,6), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nNormalized')
+    plt.hist(df_A.E, weights=[w_A]*len(df_A), bins=150, range=(0,6), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup\nLivetime corrected: %.2fx$10^6$ events'%(w_A*len(df_A)/10**6))
     plt.xlabel('Energy $MeV_{ee}$', fontsize=fontsize)
     plt.ylabel('counts', fontsize=fontsize)
     plt.legend(loc=8)
@@ -91,18 +91,20 @@ def getBinCenters(bins):
     """ From Hanno Perrey calculate center values for given bins """
     return np.array([np.mean([bins[i],bins[i+1]]) for i in range(0, len(bins)-1)])
 def plot_qdc_ratio(df_D, df_A, w_A, w_D, textstr=''):
-    H_D = np.histogram(df_D.E, weights=[w_D]*len(df_D), bins=200, range=(0,8))
-    H_A = np.histogram(df_A.E, weights=[w_A]*len(df_A), bins=200, range=(0,8))
+    H_D = np.histogram(df_D.E, weights=[w_D]*len(df_D), bins=150, range=(0,6))
+    H_A = np.histogram(df_A.E, weights=[w_A]*len(df_A), bins=150, range=(0,6))
 
     plt.plot(getBinCenters(H_D[1]), H_D[0]/H_A[0], label='Count ratio, Digital/Analog')
-    loc = plticker.MultipleLocator(base=1.0)
+    plt.grid()
+    plt.axhline(y=1, linestyle='--', color='black')
+    loc = plticker.MultipleLocator(base=0.1)
     ax = plt.gca()
     ax.yaxis.set_major_locator(loc)
     if textstr:
         plt.text(1, 4, textstr, fontsize = fontsize, verticalalignment='top',bbox=dict(facecolor='white', edgecolor='blue', pad=0.5, boxstyle='square'))
     plt.xlabel('Energy $MeV_{ee}$', fontsize=fontsize)
     plt.ylabel('Ratio of counts', fontsize=fontsize)
-    plt.legend()
+    plt.legend(frameon=True)
 
 
 
@@ -113,36 +115,36 @@ w_A = 1/0.4432267926625903
 w_D = max(np.histogram(A.E, bins=200, weights=[w_A]*len(A), range=(0,8))[0])/max(np.histogram(D.query('amplitude>155').E, bins=200, range=(0,8))[0])
 
 #figure size
-plt.figure(figsize=(6.2, 3.1))
+plt.figure(figsize=(6.2, 6))
+plt.subplot(2,1,1)
 #===QDC Spectra===
 plot_E_comp(df_D=D, df_A=A, w_A=w_A, w_D=w_D)
 plt.tight_layout()
-plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/qdc_comp.pdf', format='pdf')
-plt.show()
-
-
-
-#figure size
-plt.figure(figsize=(6.2, 4))
-plt.subplot(2,1,1)
-thr=50
-popt_a, popt_d = plot_tof_comp(df_D=D, df_A=A, w_A=1, w_D=1, thr=thr, mode='unadjusted')
-fwhm_D1 = 2*(2*np.log(2))**(1/2)*popt_d[2]
-fwhm_A1 = 2*(2*np.log(2))**(1/2)*popt_a[2]
 
 plt.subplot(2,1,2)
-thr=150
-popt_a, popt_d = plot_tof_comp(df_D=D, df_A=A, w_A=w_A, w_D=w_D, thr=thr, mode='adjusted')
-fwhm_D2 = 2*(2*np.log(2))**(1/2)*popt_d[2]
-fwhm_A2 = 2*(2*np.log(2))**(1/2)*popt_a[2]
+#figure size
+plot_qdc_ratio(df_D=D.query('amplitude>155'), w_A=w_A, w_D=w_D, df_A=A, textstr='Livetime adjusted\nDigital threshold =  %.0f mV'%(155*1000/1024))
 plt.tight_layout()
-plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/tof_comp.pdf', format='pdf')
+plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/qdc_comp.pdf', format='pdf')
+#plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/QDC_ratio.pdf', format='pdf')
 plt.show()
+
 
 
 #figure size
-plt.figure(figsize=(6.2,2.4))
-plot_qdc_ratio(df_D=D.query('amplitude>155'), w_A=w_A, w_D=w_D, df_A=A, textstr='Livetime adjusted\nDigital threshold =  %.0f mV'%(155*1000/1024))
-plt.tight_layout()
-plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/QDC_ratio.pdf', format='pdf')
-plt.show()
+# plt.figure(figsize=(6.2, 4))
+# plt.subplot(2,1,1)
+# thr=50
+# popt_a, popt_d = plot_tof_comp(df_D=D, df_A=A, w_A=1, w_D=1, thr=thr, mode='unadjusted')
+# fwhm_D1 = 2*(2*np.log(2))**(1/2)*popt_d[2]
+# fwhm_A1 = 2*(2*np.log(2))**(1/2)*popt_a[2]
+
+# plt.subplot(2,1,2)
+# thr=150
+# popt_a, popt_d = plot_tof_comp(df_D=D, df_A=A, w_A=w_A, w_D=w_D, thr=thr, mode='adjusted')
+# fwhm_D2 = 2*(2*np.log(2))**(1/2)*popt_d[2]
+# fwhm_A2 = 2*(2*np.log(2))**(1/2)*popt_a[2]
+# plt.tight_layout()
+# plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/tof_comp.pdf', format='pdf')
+# plt.show()
+

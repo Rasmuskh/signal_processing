@@ -56,7 +56,7 @@ def get_fom(Emin=0, mode='digital'):
     G=convolve(H[0], kernel, method='direct', mode='same')
 
     x=np.linspace((0)/bins,(bins-1)/bins,bins) 
-    plt.figure(figsize=(6.2,4))
+    plt.figure(figsize=(5,5))
     #plot smoothed spectrum
 
     plt.plot(x, H[0], label='Pulse shape histogram', drawstyle='steps-mid')
@@ -112,13 +112,13 @@ def get_fom(Emin=0, mode='digital'):
     plt.ylabel('Counts', fontsize=10)
     ax = plt.gca()
     ax.tick_params(axis = 'both', which = 'both', labelsize = 10)
-    plt.legend(loc=4)#, bbox_to_anchor=(0.5, 0., 0.5, 0.5))
+    plt.legend(loc='best', bbox_to_anchor=(0.45, 0., 0.5, 0.5))
 
     #use the parameter to generate the psd spectrum
     plt.axes([.54, 0.63, .4, .3], facecolor='white')
     dummy=dummy.query('0<ps_new<0.5')
     plt.hexbin((Ecal[1] + Ecal[0]*dummy.qdc_lg), dummy.ps_new, cmap='viridis', gridsize=(100,100), extent=[0,6,0,0.5])
-    plt.xlabel('MeV$_{ee}$', fontsize=10)
+    plt.xlabel('E(MeV$_{ee})$', fontsize=10)
     plt.ylabel('PS', fontsize=10)
     plt.yticks(rotation=90)
     ax = plt.gca()
