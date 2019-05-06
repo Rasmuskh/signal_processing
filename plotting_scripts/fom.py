@@ -56,7 +56,7 @@ def get_fom(Emin=0, mode='digital'):
     G=convolve(H[0], kernel, method='direct', mode='same')
 
     x=np.linspace((0)/bins,(bins-1)/bins,bins) 
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(6.2,3.1))
     #plot smoothed spectrum
 
     plt.plot(x, H[0], label='Pulse shape histogram', drawstyle='steps-mid')
@@ -89,6 +89,7 @@ def get_fom(Emin=0, mode='digital'):
     sigma = 0.2
     ymax=max(Gdummy)
     P1, C1 =  curve_fit(gaus, x, Gdummy, p0=[ymax, x0, sigma], bounds=( (ymax-10,x0-0.001, 0), (ymax+10, x0+0.001, 0.5) ))
+    print(P1)
 
     left, right, x0 = Vlist[0], 1000, Plist[1]/1000
     x = (H[1][left: right] -(H[1][1] - H[1][0])/2)
@@ -96,6 +97,7 @@ def get_fom(Emin=0, mode='digital'):
     sigma = 0.5
     ymax=max(Gdummy)
     P2, C2 =  curve_fit(gaus, x, Gdummy, p0=[ymax, x0, sigma], bounds=( (ymax-10,x0-0.01, 0), (ymax+10, x0+0.01, 0.5) ))
+    print(P2)
 
     #fit_gaus(H=G, sigma=2)
 
@@ -107,20 +109,22 @@ def get_fom(Emin=0, mode='digital'):
     plt.plot(x, gaus(x, P1[0], P1[1], P1[2]), ms=1, label='Fit: FWHM = %s'%round(fwhm1, 2))
     plt.plot(x, gaus(x, P2[0], P2[1], P2[2]), ms=1, label='Fit: FWHM = %s'%round(fwhm2, 2))
     plt.xlim(0,0.7)
-    plt.ylim(0,)
+    plt.ylim(0,8000)
     plt.xlabel('PS', fontsize=10)
     plt.ylabel('Counts', fontsize=10)
+    plt.text(0.03, 7100, 'FoM=%s'%round(FoM,2), fontsize=10, verticalalignment='top',bbox=dict(facecolor='none', edgecolor='blue', pad=0.5, boxstyle='square'))
     ax = plt.gca()
     ax.tick_params(axis = 'both', which = 'both', labelsize = 10)
-    plt.legend(loc='best', bbox_to_anchor=(0.45, 0., 0.5, 0.5))
+    plt.xlim(0,0.5)
+    plt.legend(loc='best')#, bbox_to_anchor=(0.45, 0., 0.5, 0.5))
 
-    #use the parameter to generate the psd spectrum
-    plt.axes([.54, 0.63, .4, .3], facecolor='white')
-    dummy=dummy.query('0<ps_new<0.5')
-    plt.hexbin((Ecal[1] + Ecal[0]*dummy.qdc_lg), dummy.ps_new, cmap='viridis', gridsize=(100,100), extent=[0,6,0,0.5])
-    plt.xlabel('E(MeV$_{ee})$', fontsize=10)
-    plt.ylabel('PS', fontsize=10)
-    plt.yticks(rotation=90)
+    # #use the parameter to generate the psd spectrum
+    # plt.axes([.64, 0.61, .3, .3], facecolor='white')
+    # dummy=dummy.query('0<ps_new<0.5')
+    # plt.hexbin((Ecal[1] + Ecal[0]*dummy.qdc_lg), dummy.ps_new, cmap='viridis', gridsize=(100,100), extent=[0,6,0,0.5])
+    # plt.xlabel('E (MeV$_{ee})$', fontsize=10)
+    # plt.ylabel('PS', fontsize=10)
+    # plt.yticks(rotation=90)
     ax = plt.gca()
     ax.tick_params(axis = 'both', which = 'both', labelsize = 10)
     plt.tight_layout()
