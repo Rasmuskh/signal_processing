@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import digviz as dv
 #Pandas
 import pandas as pd
 #Dask
@@ -48,7 +49,7 @@ def load_dataframe(filepath, in_memory=False, mode='standard', engine='pyarrow')
 
 
 
-def cook_data(filepath, threshold, maxamp, Nchannel, Ychannel, outpath="",model_path="", CNN_window=300,  baseline_int_window=20, lg_baseline_offset=0, sg_baseline_offset=0, frac=0.3, lg=0, sg=0, cleanUp=False, blocksize=25*10**6, repatition_factor=16):
+def cook_data(filepath, threshold, maxamp, tofON=False, Nchannel=0, Ychannel=1, outpath="",model_path="", CNN_window=300,  baseline_int_window=20, lg_baseline_offset=0, sg_baseline_offset=0, frac=0.3, lg=300, sg=60, cleanUp=False, blocksize=25*10**6, repatition_factor=16, daq='jadaq'):
     """Uses dask to process the txt output of WaveDump on all available logical cores and return a simple dataframe in parquet format
     \nfilepath = Path to file. Use * as a wildcard to read multiple textfile: e.g. file*.txt, will read file1.txt, file2.txt, file3.txt, etc into the same dataframe.
     \nthreshold = Wavedump triggers on all channels when one channel triggers, so to throw away empty events we must reenforce the threshold.
@@ -71,25 +72,33 @@ def cook_data(filepath, threshold, maxamp, Nchannel, Ychannel, outpath="",model_
     #==================#
     # Read in the file #
     #==================#
-    df = dd.read_csv(filepath, header=None, usecols=[0, 2, 3, 5, 7],
-                     names=['window_width', 'channel', 'event_number', 'timestamp', 'samples'],
-                     dtype={'window_width': np.int32,
-                            'channel': np.int8,
-                            'event_number': np.int64,
-                            'timestamp': np.int64,
-                            'samples': np.object},
-                     blocksize=blocksize)
+    if daq == 'wavedump':
+        df = dd.read_csv(filepath, header=None, usecols=[0, 2, 3, 5, 7],
+                         names=['window_width', 'channel', 'event_number', 'timestamp', 'samples'],
+                         dtype={'window_width': np.int32,
+                                'channel': np.int8,
+                                'event_number': np.int64,
+                                'timestamp': np.int64,
+                                'samples': np.object},
+                         blocksize=blocksize)
+        #====================#
+        # Format the samples #
+        #====================#
+        #first convert the string into an integer array. Then subtract the baseline.
+        df['samples'] = df['samples'].str.split().apply(lambda x: np.array(x, dtype=np.int16), meta=df['samples'])
 
-    #====================#
-    # Format the samples #
-    #====================#
-    #first convert the string into an integer array. Then subtract the baseline.
-    df['samples'] = df['samples'].str.split().apply(lambda x: np.array(x, dtype=np.int16), meta=df['samples'])
-    df['samples'] = df['samples'].apply(lambda x: x - int(round(np.average(x[0:baseline_int_window]))), meta=df['samples'])
+    elif daq == 'jadaq':
+        df = dv.load_h5_da(filepath)
+        #width should not be hardcoded
+        df['window_width'] = 1001
+
     #The baseline is forced to be an integer. The non integer part is multiplied by 1000 and cast to an int for later use in pulse integration.
-    df['fine_baseline_offset'] = np.int16(0)
+    df['samples'] = df['samples'].apply(lambda x: x - int(round(np.average(x[0:baseline_int_window]))), meta=df['samples'])
+    df['fine_baseline_offset'] = 0#np.int16(0)
     df['fine_baseline_offset'] =  df.apply(lambda x: int(0.5 + 1000 * np.average( x.samples[0:baseline_int_window] ) ),
                                          meta=df['fine_baseline_offset'], axis=1)
+
+
 
 
     #====================================#
@@ -98,12 +107,6 @@ def cook_data(filepath, threshold, maxamp, Nchannel, Ychannel, outpath="",model_
     df['amplitude'] = df['samples'].apply(lambda x: np.max(np.absolute(x)), meta=df['samples']).astype(np.int16)
     df['peak_index'] = df['samples'].apply(np.argmin, meta=df['samples']).astype(np.int16)
 
-    #====================#
-    # Pulse integrations #
-    #====================#
-    # offsetting each bin by a certain baseline offset is equivalent to adding the product
-    # of the integration window and the baseline offset to the integration.
-    df = pulse_integration(df, lg, sg)
 
     #=======================#
     # generate cfd triggers #
@@ -111,11 +114,18 @@ def cook_data(filepath, threshold, maxamp, Nchannel, Ychannel, outpath="",model_
     df['cfd_trig_rise'] = np.int32(0)
     df['cfd_trig_rise'] = df.apply(lambda x: cfd(x, frac=0.3), meta=df['cfd_trig_rise'], axis=1)
 
+    #====================#
+    # Pulse integrations #
+    #====================#
+    # offsetting each bin by a certain baseline offset is equivalent to adding the product
+    # of the integration window and the baseline offset to the integration.
+    df = pulse_integration(df, lg, sg)
+
     #===================#
     # Handle bad events #
     #===================#
     #Throw away events whose amplitude is below the threshold
-    #df = df[df['amplitude'] >= ch_thr_mask[df['channel']]]
+    #df = df[df['amplitude'] >= ch_thr_mask[df['ch']]]
     df = df[df['amplitude'] >= threshold]
     #And those whose amplitude is greater than the expected maximum amplitude (likely have their tops cut off)
     df['cutoff'] = False
@@ -140,8 +150,9 @@ def cook_data(filepath, threshold, maxamp, Nchannel, Ychannel, outpath="",model_
     #===========================#
     #Time of Flight correlations#
     #===========================#
-    shift = int( (Nchannel - Ychannel)/abs(Nchannel-Ychannel) )
-    df = get_tof(df, Nchannel, Ychannel, shift)
+    if tofON == True:
+        shift = int( (Nchannel - Ychannel)/abs(Nchannel-Ychannel) )
+        df = get_tof(df, Nchannel, Ychannel, shift)
 
     #=======================================#
     #Convolutional neural network prediction#
@@ -188,13 +199,13 @@ def get_tof(df, Nchannel, Ychannel, shift):
     It then runs the check_tof_ch, which ensures that only events in the neutron detector,
     which are correlated to gamma detector event are accepted. All other events land in the quarantine bin -999999"""
     df['tof'] = np.int32(0)
-    df['tof'] =  ( ( 8*1000*df['timestamp'] + df['cfd_trig_rise'] ) - ( 8*1000*df['timestamp'].shift(shift) + df['cfd_trig_rise'].shift(shift) ) ).fillna(-999999).astype(np.int32)
+    df['tof'] =  ( ( 8*1000*df['ts'] + df['cfd_trig_rise'] ) - ( 8*1000*df['ts'].shift(shift) + df['cfd_trig_rise'].shift(shift) ) ).fillna(-999999).astype(np.int32)
     #Only events in the neutron detector, which are matched to yap events are used. all other events are sent to a quarantine bin.
-    df['tof_ch_shift'] = df['channel'].shift(shift).fillna(-1).astype(np.int8)
+    df['tof_ch_shift'] = df['ch'].shift(shift).fillna(-1).astype(np.int8)
     df['tof'] = df.apply(lambda x: check_tof_ch(x, Nchannel, Ychannel), meta=df['tof'], axis=1)
 
     def check_tof_ch(row, Nchannel, Ychannel):
-        if ( row['channel'] == Nchannel ):
+        if ( row['ch'] == Nchannel ):
             if ( row['tof_ch_shift'] == Ychannel ):
                 return row['tof']
         return -999999
@@ -235,11 +246,11 @@ def get_tof_array(df, Nchannel, Ychannel, i, tol):
     L = len(df)
     tofarray = np.array([-20000]*L, dtype=np.int32)
     for index, row in df.iterrows():
-        if (row['channel'] == Ychannel):
-            Ytdummy = row['timestamp']*1000*8 + row['cfd_trig_rise']
-        if (row['channel'] == Nchannel):
+        if (row['ch'] == Ychannel):
+            Ytdummy = row['ts']*1000*8 + row['cfd_trig_rise']
+        if (row['ch'] == Nchannel):
             Nch_index = i
-            Ntdummy = row['timestamp']*1000*8 + row['cfd_trig_rise']
+            Ntdummy = row['ts']*1000*8 + row['cfd_trig_rise']
         if (0 < Ntdummy-Ytdummy < tol ):
             tofarray[Nch_index] = Ntdummy-Ytdummy
         i += 1
@@ -251,7 +262,7 @@ def cfd(row, frac):
     samples=row['samples']
     rise_index = 0
     #find the cfd rise point
-    for i in range( max(0, row['peak_index']-40), row['peak_index']):
+    for i in range( max(0, row['peak_index']-20), row['peak_index']):
         if samples[i] < frac * peak:
             rise_index = i
             break
@@ -270,3 +281,11 @@ def cfd(row, frac):
     else:
         tfine_rise = 1000*(rise_index-1) + int(round(1000*(peak*frac-samples[rise_index-1])/slope_rise))
     return np.int32(tfine_rise)
+
+
+if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
+
+    D = cook_data(filepath='../jadaq-00095.h5', threshold=50, maxamp=900, daq='jadaq')
+

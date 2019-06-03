@@ -41,12 +41,12 @@ def fit_gaus(left, right, df):
 def plot_E_comp(df_D, df_A, w_A, w_D):
     thrList=[50, 155]
     d = df_D.query('amplitude>%s'%(thrList[0]))
-    plt.hist(d.E, weights=[1]*len(d), bins=150, range=(0,6), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nRaw: %.2fx$10^6$ events'%(len(df_D)/10**6))
+    plt.hist(d.E, weights=[1]*len(d), bins=150, range=(0,6), log=True, histtype='step', alpha=1, lw=1.5, color='green', label='Digital setup\nRaw: %.2fx$10^6$ events'%(len(df_D)/10**6))
     d = df_D.query('amplitude>%s'%(thrList[1]))
 
 
-    plt.hist(d.E, weights=[w_D]*len(d), bins=150, range=(0,6), log=True, histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nNormalized')
-    plt.hist(df_A.E, weights=[w_A]*len(df_A), bins=150, range=(0,6), log=True, histtype='step', alpha=0.75, lw=1.5, label='Analog setup\nLivetime corrected: %.2fx$10^6$ events'%(w_A*len(df_A)/10**6))
+    plt.hist(d.E, weights=[w_D]*len(d), bins=150, range=(0,6), log=True, histtype='step', alpha=1, lw=1.5, color='blue', label='Digital setup\nNormalized')
+    plt.hist(df_A.E, weights=[w_A]*len(df_A), bins=150, range=(0,6), log=True, histtype='step', alpha=1, lw=1.5, color='red', label='Analog setup\nLivetime corrected: %.2fx$10^6$ events'%(w_A*len(df_A)/10**6))
     plt.xlabel('Energy $\mathrm{MeV}_{ee}$', fontsize=fontsize)
     plt.ylabel('counts', fontsize=fontsize)
     plt.legend(loc=8)
@@ -76,12 +76,12 @@ def plot_tof_comp(df_D, df_A, w_A, w_D, thr, mode, tlim=(-20,80), textstr=''):
     dummy_D = dummy_D.query('amplitude>%s'%thr)
     d_detect = 1.055+0.005+179/1000/2
     if mode == 'unadjusted':
-            plt.hist(dummy_D.tof + d_detect/c, weights=[w_D]*len(dummy_D), bins=tlim[1]-tlim[0], range=(tlim[0],tlim[1]), histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nUnadjusted: %.1fx$10^3$ events'%(w_D*len(dummy_D)/1000), color='blue')
-            plt.hist(dummy_A.tof + d_detect/c, weights=[w_A]*len(dummy_A), bins=tlim[1]-tlim[0], range=(tlim[0], tlim[1]), histtype='step', alpha=0.75, lw=1.5, label='Analog setup\nUnadjusted: %.1fx$10^3$ events'%(w_A*len(dummy_A)/1000), color='red')
+            plt.hist(dummy_D.tof + d_detect/c, weights=[w_D]*len(dummy_D), bins=tlim[1]-tlim[0], range=(tlim[0],tlim[1]), histtype='step', alpha=1, lw=1.5, label='Digital setup\nUnadjusted: %.1fx$10^3$ events'%(w_D*len(dummy_D)/1000), color='blue')
+            plt.hist(dummy_A.tof + d_detect/c, weights=[w_A]*len(dummy_A), bins=tlim[1]-tlim[0], range=(tlim[0], tlim[1]), histtype='step', alpha=1, lw=1.5, label='Analog setup\nUnadjusted: %.1fx$10^3$ events'%(w_A*len(dummy_A)/1000), color='red')
     elif mode == 'adjusted':
-            plt.hist(dummy_D.tof + d_detect/c, weights=[w_D]*len(dummy_D), bins=tlim[1]-tlim[0], range=(tlim[0],tlim[1]), histtype='step', alpha=0.75, lw=1.5, label='Digital setup\nNormalized and threshold adjusted', color='blue')
-            plt.hist(dummy_A.tof + d_detect/c, weights=[w_A]*len(dummy_A), bins=tlim[1]-tlim[0], range=(tlim[0], tlim[1]), histtype='step', alpha=0.75, lw=1.5, label='Analog setup\nLivetime corrected: %.1fx$10^3$ events'%(w_A*len(dummy_A)/1000), color='red')
-    plt.xlabel('ToF(ns)', fontsize=fontsize)
+            plt.hist(dummy_D.tof + d_detect/c, weights=[w_D]*len(dummy_D), bins=tlim[1]-tlim[0], range=(tlim[0],tlim[1]), histtype='step', alpha=1, lw=1.5, label='Digital setup\nNormalized and threshold adjusted', color='blue')
+            plt.hist(dummy_A.tof + d_detect/c, weights=[w_A]*len(dummy_A), bins=tlim[1]-tlim[0], range=(tlim[0], tlim[1]), histtype='step', alpha=1, lw=1.5, label='Analog setup\nLivetime corrected: %.1fx$10^3$ events'%(w_A*len(dummy_A)/1000), color='red')
+    plt.xlabel('ToF (ns)', fontsize=fontsize)
     plt.ylabel('counts', fontsize=fontsize)
     plt.legend(loc=0)
     ax = plt.gca()
@@ -122,19 +122,19 @@ def plot_qdc_ratio(df_D, df_A, w_A, w_D, textstr=''):
 w_A = 1/0.4432267926625903
 w_D = max(np.histogram(A.E, bins=200, weights=[w_A]*len(A), range=(0,8))[0])/max(np.histogram(D.query('amplitude>155').E, bins=200, range=(0,8))[0])
 
-# #figure size
-# plt.figure(figsize=(6.2, 6))
-# plt.subplot(2,1,1)
-# #===QDC Spectra===
-# plot_E_comp(df_D=D, df_A=A, w_A=w_A, w_D=w_D)
-# plt.tight_layout()
+#figure size
+plt.figure(figsize=(6.2, 6))
+plt.subplot(2,1,1)
+#===QDC Spectra===
+plot_E_comp(df_D=D, df_A=A, w_A=w_A, w_D=w_D)
+plt.tight_layout()
 
-# plt.subplot(2,1,2)
-# #figure size
-# plot_qdc_ratio(df_D=D.query('amplitude>155'), w_A=w_A, w_D=w_D, df_A=A, textstr='Livetime adjusted\nDigital threshold =  %.0f mV'%(155*1000/1024))
-# plt.tight_layout()
-# plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/qdc_comp.png', format='png')
-# plt.show()
+plt.subplot(2,1,2)
+#figure size
+plot_qdc_ratio(df_D=D.query('amplitude>155'), w_A=w_A, w_D=w_D, df_A=A, textstr='Livetime adjusted\nDigital threshold =  %.0f mV'%(155*1000/1024))
+plt.tight_layout()
+plt.savefig('/home/rasmus/Documents/ThesisWork/Thesistex/CompareResults/qdc_comp.png', format='png')
+plt.show()
 
 
 A = A.query('500<qdc_det0<5000')

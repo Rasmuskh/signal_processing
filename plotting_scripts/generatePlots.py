@@ -144,13 +144,13 @@ def tof_hist(df, outpath, qdc_min, mode, window, bins, fontsize, txt):
         plt.step(S.x, S.y*scale, label='Scherzinger' )
         plt.ylim(0,1.4*plt.gca().get_ylim()[1])
     else:
-        plt.hist(E, range=(Elow,Ehigh), bins=int(0.5+(Ehigh-Elow)*5), color='red', label='$\mathrm{E_{neutron}}$', alpha=0.7)
+        plt.hist(E, range=(Elow,Ehigh), bins=int(0.5+(Ehigh-Elow)*5), color='red', label='Neutrons', alpha=0.7) 
         scale=5100#max(np.histogram(E, range=(Elow,Ehigh), bins=int(0.5+(Ehigh-Elow)*3))[0]) / max(S.y)
         plt.step(S.x, S.y*scale, label='Scherzinger' )
         plt.ylim(0,1.4*plt.gca().get_ylim()[1])
 
     plt.ylabel('Counts', fontsize= fontsize)
-    plt.xlabel('E_{neutron} (MeV)', fontsize= fontsize)
+    plt.xlabel('$E_\mathrm{neutron}$ (MeV)', fontsize= fontsize)
     plt.legend(fontsize= fontsize)
     loc = plticker.MultipleLocator(base=1.0)
     ax = plt.gca()
@@ -181,12 +181,12 @@ def Edep_Eneutron(df, outpath, fontsize, title, mode):
     dummy['Eneutron'] = E
 
     fontsize = 10
-    plt.figure(figsize=(6.2, 6.2))
+    plt.figure(figsize=(6.2, 4.5))
     left=-0.2
     right=1.1
     bins=30
     d=dummy
-    colorList = ['red', 'blue', 'orange']
+    colorList = ['red', 'blue', 'green']
     thrList = [50, 103, 155]
     f = 100
 
@@ -211,10 +211,10 @@ def Edep_Eneutron(df, outpath, fontsize, title, mode):
 
 
     #..........
-    plt.subplot(3,1,2)
-    plt.scatter(d.Eneutron, d.E, s=50, alpha=0.08, label='', zorder=0)
+    plt.subplot(2,1,2)
+    plt.scatter(d.Eneutron, d.E, s=50, alpha=0.08, label='', zorder=0, color='orange')
     plt.xlim(0,6)
-    elim = (Elow, 5.2)#(Elow, 4.7)
+    elim = (Elow, 5.5)#(Elow, 4.7)
     plt.ylim(0, 3)
     L=13
     x0List = [0]*(L-1)
@@ -222,6 +222,7 @@ def Edep_Eneutron(df, outpath, fontsize, title, mode):
     Enlist_centers = Enlist_centers = (EnList+ (EnList[1]- EnList[0])/2)[0:-1]
     errorList=[0]*len(x0List)
     plt.axvline(x=EnList[0]+(L-1)*(EnList[1]-EnList[0]), linestyle='--', color='black', lw=1)
+
     k=0
     for i in range (0,len(x0List)):
         plt.axvline(x=EnList[i], linestyle='--', color='black', lw=1)
@@ -230,25 +231,31 @@ def Edep_Eneutron(df, outpath, fontsize, title, mode):
         p, c = curve_fit(gaus, x, H[0], p0=[max(H[0]), np.mean(x), 10])
         errorList[i] = p[2]
         x0List[i] = p[1]
-        plt.subplot(3,1,1)
+        plt.subplot(2,1,1)
 
         if ((i==0) or (i==5) or (i==10)):
-            plt.subplot(3,1,1)
-            plt.plot(x, gaus(x, p[0], p[1], p[2]), label='slice %s'%i, color=colorList[k])
+            plt.subplot(2,1,1)
+            t = (m/(2*Enlist_centers[i]))**(1/2)*d_detect/c
+            print(type(Enlist_centers[i]))
+            
+            plt.plot(x, gaus(x, p[0], p[1], p[2]), label='slice %s: %.2f MeV'%(i, round(Enlist_centers[i],2)), color=colorList[k])
             plt.step(x=x, y=H[0], color=colorList[k])
             k+=1
             plt.legend()
-            plt.xlabel('$\mathrm{E_{dep}}$ ($\mathrm{MeV}_{ee}$)')
+            plt.xlabel('$\mathrm{E_{deposited}}$ ($\mathrm{MeV}_{ee}$)')
             plt.xlim(0,3)
             plt.ylabel('Counts')
-        plt.subplot(3,1,2)
+        plt.subplot(2,1,2)
     #plt.subplot(1,1,1)
     #plt.legend()
 
-    plt.subplot(3,1,2)
-    plt.errorbar(Enlist_centers, x0List, yerr=errorList, marker='o', color='red',fmt='o', zorder=2)
-    plt.gca().set_xticklabels([''])
-    plt.ylabel('$\mathrm{E_{dep}}$ ($\mathrm{MeV}_{ee}$)')
+    plt.subplot(2,1,2)
+    plt.errorbar(Enlist_centers[0], x0List[0], yerr=errorList[0], marker='o', color=colorList[0],fmt='o', zorder=3, label='slice %s'%(0))
+    plt.errorbar(Enlist_centers[5], x0List[5], yerr=errorList[5], marker='o', color=colorList[1],fmt='o', zorder=3, label='slice %s'%(5))
+    plt.errorbar(Enlist_centers[10], x0List[10], yerr=errorList[10], marker='o', color=colorList[2],fmt='o', zorder=3, label='slice %s'%(10))
+    plt.errorbar(Enlist_centers, x0List, yerr=errorList, marker='o', color='black',fmt='o', zorder=2)
+    #plt.gca().set_xticklabels([''])
+    plt.ylabel('$\mathrm{E_{deposited}}$ ($\mathrm{MeV}_{ee}$)')
     def conv(En, par1, par0=0):
         return par0 + par1*(0.83*En - 2.82*(1 - exp(-0.25*(En)**(0.93) ) ) )
         #return par0 + -par1*2.82*(1 - exp(-0.25*(En)**(0.93)) +0.83*En )
@@ -257,10 +264,11 @@ def Edep_Eneutron(df, outpath, fontsize, title, mode):
     popt_Curve,pcov = curve_fit(conv, xdata=Enlist_centers, ydata=x0List, p0=[1], bounds=((0),(5)))
     print(popt_Curve)
     x = np.linspace(0,10,100)
-    plt.plot(x, conv(x, popt_Curve[0]), label='Fit: C=%s'%round(popt_Curve[0],2), color='orange', zorder=1)
+    plt.plot(x, conv(x, popt_Curve[0]), label='Fit: C=%s'%round(popt_Curve[0],2), color='grey', zorder=1)
 
 
     plt.legend(fontsize=fontsize)
+    plt.xlabel('$\mathrm{E_{neutron}}$ ($\mathrm{MeV}$)')
     ax3=plt.gca()
     ax3.tick_params(axis = 'both', which = 'both', labelsize =  fontsize)
 
@@ -270,37 +278,36 @@ def Edep_Eneutron(df, outpath, fontsize, title, mode):
     popt[0] *= f
 
     #panel 2
-    plt.subplot(3,1,3)
-    plt.scatter(d.Eneutron,d.E/conv(d.Eneutron, popt_Curve),  s=50, alpha=0.08)
-    plt.xlim(0, 6)
-    plt.ylim(-0.5, 2)
-    L=13
-    x0List = [0]*(L-1)
-    EnList = np.linspace(Elow,5.2,L)
-    Enlist_centers = Enlist_centers = (EnList+ (EnList[1]- EnList[0])/2)[0:-1]
-    errorList=[0]*len(x0List)
-    plt.axvline(x=EnList[0]+(L-1)*(EnList[1]-EnList[0]), linestyle='--', color='black', lw=1)
-    for i in range (0,len(x0List)):
-        plt.axvline(x=EnList[i], linestyle='--', color='black', lw=1)
-        H = np.histogram(d.query('(%s)<Eneutron<(%s)'%(EnList[i], EnList[i+1])).E/conv(d.Eneutron, popt_Curve), range=(-1,5), bins=600)
-        x = getBinCenters(H[1])
-        p, c = curve_fit(gaus, x, H[0], p0=[max(H[0]), np.mean(x), 10])
-        errorList[i] = p[2]
-        x0List[i] = p[1]
+    # plt.subplot(3,1,3)
+    # plt.scatter(d.Eneutron,d.E/conv(d.Eneutron, popt_Curve),  s=50, alpha=0.08)
+    # plt.xlim(0, 6)
+    # plt.ylim(-0.5, 2)
+    # L=13
+    # x0List = [0]*(L-1)
+    # EnList = np.linspace(Elow,5.2,L)
+    # Enlist_centers = Enlist_centers = (EnList+ (EnList[1]- EnList[0])/2)[0:-1]
+    # errorList=[0]*len(x0List)
+    # plt.axvline(x=EnList[0]+(L-1)*(EnList[1]-EnList[0]), linestyle='--', color='black', lw=1)
+    # for i in range (0,len(x0List)):
+    #     plt.axvline(x=EnList[i], linestyle='--', color='black', lw=1)
+    #     H = np.histogram(d.query('(%s)<Eneutron<(%s)'%(EnList[i], EnList[i+1])).E/conv(d.Eneutron, popt_Curve), range=(-1,5), bins=600)
+    #     x = getBinCenters(H[1])
+    #     p, c = curve_fit(gaus, x, H[0], p0=[max(H[0]), np.mean(x), 10])
+    #     errorList[i] = p[2]
+    #     x0List[i] = p[1]
 
 
-        #plt.subplot(1,1,1)
-        #plt.plot(x, gaus(x, p[0], p[1], p[2]))
-        #plt.step(x=x, y=H[0], label='%s'%i)
-        #plt.legend()
-        #plt.show()
+    #     #plt.subplot(1,1,1)
+    #     #plt.plot(x, gaus(x, p[0], p[1], p[2]))
+    #     #plt.step(x=x, y=H[0], label='%s'%i)
+    #     #plt.legend()
+    #     #plt.show()
 
-    plt.errorbar(Enlist_centers, x0List, yerr=errorList, marker='o', color='red',fmt='o')
-    plt.axhline(y=popt[1], color='black', ls='--', lw=1)#, label='$\mathrm{x_0}$=%s'%round(popt[1],3))
-    print('zzzzzzzzzzz', popt[1])
-    plt.legend()
-    plt.xlabel('$\mathrm{E_{neutron}}$ ($\mathrm{MeV}$)')
-    plt.ylabel('$\mathrm{ \dfrac{E_{dep}\;[MeV_\mathit{ee}]}{E_{neutron}\;[MeV_\mathit{ee}]}}$', fontsize=fontsize)
+    # plt.errorbar(Enlist_centers, x0List, yerr=errorList, marker='o', color='red',fmt='o')
+    # plt.axhline(y=1, color='black', ls='--', lw=1, label='y=1')
+    # plt.legend()
+    # plt.xlabel('$\mathrm{E_{neutron}}$ ($\mathrm{MeV}$)')
+    # plt.ylabel('$\mathrm{ \dfrac{E_{dep}\;(MeV_\mathit{ee})}{E_{neutron}\;(MeV_\mathit{ee})}}$', fontsize=fontsize)
 
 
     plt.tight_layout()
@@ -392,7 +399,7 @@ def tof_E(df, outpath, fontsize, title):
     ax = plt.gca()
     #textstr='%s'%title
     #plt.text(10, 5.5, textstr, fontsize= fontsize, color='white', verticalalignment='top',bbox=dict(facecolor='None', edgecolor='white', pad=0.5, boxstyle='square'))
-    ax.annotate('Gammas', xy=(5,2), xytext=(10,3), color='white', fontsize= fontsize,
+    ax.annotate('Gamma-rays', xy=(5,2), xytext=(15,4), color='white', fontsize= fontsize,
             arrowprops=dict(facecolor='white', shrink=0.05, width=2, frac=0.10, headwidth=9),
     )
     ax.annotate('Neutrons', xy=(45,2), xytext=(55,3), color='white', fontsize= fontsize,
@@ -414,7 +421,7 @@ def tof_psd(df, outpath, cut, psdown, psup, tofdown, tofup, qdc_min, title, txt_
         outpath+='CNN'
     else:
         dummy=df.query('%s<ps<%s and %s<tof<%s and %s<qdc_lg'%(psdown, psup, tofdown, tofup, qdc_min))
-        plt.hexbin( dummy.tof, dummy.ps, gridsize=(100, 100), cmap=cmap, norm=mc.LogNorm() )
+        plt.hexbin( dummy.tof, dummy.ps, gridsize=(100, 100), cmap=cmap, norm=mc.LogNorm(), extent=(tofdown, tofup, psdown, psup) )
         plt.ylabel('PS', fontsize= fontsize)
     plt.xlabel('ToF (ns)', fontsize= fontsize)
     #plt.title(title, fontsize=12)
@@ -422,7 +429,10 @@ def tof_psd(df, outpath, cut, psdown, psup, tofdown, tofup, qdc_min, title, txt_
     plt.colorbar()
     ax = plt.gca()
     textstr='%s'%title
-    plt.text(30, psdown+0.07, textstr, fontsize= fontsize, color='white', verticalalignment='top',bbox=dict(facecolor='None', edgecolor='white', pad=0.5, boxstyle='square'))
+    if CNN==True:
+        plt.text(30, psdown+0.07, textstr, fontsize= fontsize, color='white', verticalalignment='top',bbox=dict(facecolor='None', edgecolor='white', pad=0.5, boxstyle='square'))
+    else:
+        plt.text(30, 0, textstr, fontsize= fontsize, color='white', verticalalignment='top',bbox=dict(facecolor='None', edgecolor='white', pad=0.5, boxstyle='square'))
     ax.annotate('Neutrons', xy=arrow_xy_neutron, xytext=txt_xy_neutron, color='white', fontsize= fontsize,
                 arrowprops=dict(facecolor='white', shrink=0.05, width=2, frac=0.10, headwidth=9),
     )
@@ -470,9 +480,9 @@ CNN_cut = 0.5
 # psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/',  CNN=True, cut=CNN_cut, down=0, up=1, qdc_min=0, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2.1, 0.1, 2.5, 0.25], arrow2=[4.2, 0.05, 4.7, 0.25], box=[2, 0.65])
 # psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/',  CNN=False, cut=AnalogCut, down=0, up=0.5, qdc_min=500, fontsize=fontsize, title="--- Discrimination cut", arrow1=[2, 0.2, 2.5, 0.11], arrow2=[4.2, 0.2, 4.7, 0.11], box=[2, 0.48])
 
-#tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=0, cut=DigitalCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[5, 0.4], txt_xy_neutron=[70, 0.45], arrow_xy_gamma=[3.5, 0.25], arrow_xy_neutron=[50, 0.3], CNN=False)
-#tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=0, cut=CNN_cut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.7], arrow_xy_gamma=[4, 0.2], arrow_xy_neutron=[45, 0.9], CNN=True)
-#tof_psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=500, cut=AnalogCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.48], txt_xy_neutron=[60, 0.48], arrow_xy_gamma=[4, 0.28], arrow_xy_neutron=[45, 0.38], CNN=False)
+# tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=0, cut=DigitalCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[5, 0.4], txt_xy_neutron=[70, 0.45], arrow_xy_gamma=[3.5, 0.25], arrow_xy_neutron=[50, 0.3], CNN=False)
+# tof_psd(D, '/home/rasmus/Documents/ThesisWork/Thesistex/DigitalResults/', psdown=0, psup=1, tofdown=0, tofup=100, qdc_min=0, cut=CNN_cut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.7], arrow_xy_gamma=[4, 0.2], arrow_xy_neutron=[45, 0.9], CNN=True)
+# tof_psd(A, '/home/rasmus/Documents/ThesisWork/Thesistex/AnalogResults/', psdown=-0.1, psup=0.5, tofdown=0, tofup=100, qdc_min=500, cut=AnalogCut, fontsize=fontsize, title="--- Discrimination cut", txt_xy_gamma=[10, 0.4], txt_xy_neutron=[60, 0.45], arrow_xy_gamma=[4, 0.28], arrow_xy_neutron=[45, 0.38], CNN=False)
 
 # Cgamma=d_detect/c
 # Ylim = (Cgamma-5,Cgamma+5)
